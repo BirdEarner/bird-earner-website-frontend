@@ -11,7 +11,8 @@ import {
   DollarSign,
   UserCheck,
   History,
-  UserCog
+  UserCog,
+  Bell
 } from "lucide-react";
 import {
   Sidebar,
@@ -149,6 +150,17 @@ export function SuperAdminSidebar() {
                 >
                   <HelpCircle className="text-muted-foreground" />
                   <span>FAQs</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/money_plant/notification_management" passHref legacyBehavior>
+                <SidebarMenuButton
+                  tooltip="Notification Management"
+                  isActive={isActive("/money_plant/notification_management")}
+                >
+                  <Bell className="text-muted-foreground" />
+                  <span>Notification Management</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

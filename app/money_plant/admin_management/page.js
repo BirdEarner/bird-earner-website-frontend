@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Plus, Trash2, Mail, Shield, User, MoreVertical } from "lucide-react";
+import { Search, Plus, Trash2, Mail, Shield, User, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ export default function AdminManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -55,6 +57,30 @@ export default function AdminManagementPage() {
       email: "mike@example.com",
       role: "Admin",
       lastActive: "2024-03-13T09:20:00",
+      status: "inactive",
+    },
+    {
+      id: 4,
+      fullName: "Sarah Wilson",
+      email: "sarah@example.com",
+      role: "Admin",
+      lastActive: "2024-03-12T14:20:00",
+      status: "active",
+    },
+    {
+      id: 5,
+      fullName: "Tom Brown",
+      email: "tom@example.com",
+      role: "Admin",
+      lastActive: "2024-03-11T11:20:00",
+      status: "active",
+    },
+    {
+      id: 6,
+      fullName: "Emily Davis",
+      email: "emily@example.com",
+      role: "Admin",
+      lastActive: "2024-03-10T16:20:00",
       status: "inactive",
     },
   ]);
@@ -114,6 +140,19 @@ export default function AdminManagementPage() {
       admin.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredAdmins.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredAdmins.length / itemsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-6 p-6 bg-purple-50/50">
       <div className="flex items-center justify-between">
@@ -169,7 +208,7 @@ export default function AdminManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredAdmins.map((admin) => (
+              {currentItems.map((admin) => (
                 <tr
                   key={admin.id}
                   className="border-b border-purple-100 last:border-0"
@@ -231,6 +270,46 @@ export default function AdminManagementPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-purple-200 bg-purple-50/50">
+          <div className="flex items-center text-sm text-purple-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredAdmins.length)} of {filteredAdmins.length} entries
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="border-purple-200 hover:bg-purple-100"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+              <Button
+                key={number}
+                variant={currentPage === number ? "default" : "outline"}
+                size="sm"
+                onClick={() => paginate(number)}
+                className={currentPage === number 
+                  ? "bg-purple-600 hover:bg-purple-700" 
+                  : "border-purple-200 hover:bg-purple-100"}
+              >
+                {number}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="border-purple-200 hover:bg-purple-100"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

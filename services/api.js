@@ -2,7 +2,8 @@ export const faqApi = {
   // Get all FAQs
   getAllFaqs: async () => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/api/faqs`);
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/faqs`);
       if (!response.ok) throw new Error('Failed to fetch FAQs');
       return await response.json();
     } catch (error) {
@@ -14,7 +15,8 @@ export const faqApi = {
   // Create new FAQ
   createFaq: async (faqData) => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/api/faqs`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/faqs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,7 +34,8 @@ export const faqApi = {
   // Update FAQ
   updateFaq: async (id, faqData) => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/api/faqs/${id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/faqs/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +53,8 @@ export const faqApi = {
   // Delete FAQ
   deleteFaq: async (id) => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/api/faqs/${id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/faqs/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete FAQ');
