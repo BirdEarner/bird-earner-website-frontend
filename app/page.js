@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   FileText,
@@ -15,7 +16,6 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Lottie from "lottie-react";
 import birdyAnimation from "@/public/animations/birdy.json";
 import clientAnimation from "@/public/animations/client.json";
 import manAnimation from "@/public/animations/man.json";
@@ -29,6 +29,9 @@ import { motion } from "framer-motion";
 import { useCursorPosition } from "@/hooks/useCursorPosition";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { useSmoothScroll } from "@/hooks/useSmoothScroll";
+
+// Dynamically import Lottie with SSR disabled
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 function LoadingSpinner() {
   return (
@@ -537,7 +540,7 @@ function HomeContent() {
                   name: "David Wilson",
                   designation: "Digital Marketer",
                   quote:
-                    "BirdEarner’s reward system is a great motivator! Earning bonuses while working on projects keeps me engaged and excited.",
+                    "BirdEarner's reward system is a great motivator! Earning bonuses while working on projects keeps me engaged and excited.",
                   src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
                 },
                 {

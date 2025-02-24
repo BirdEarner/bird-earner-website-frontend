@@ -1,3 +1,5 @@
+"use client";
+
 export default function Android({
   width = 433,
   height = 600,

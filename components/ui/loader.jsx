@@ -1,3 +1,5 @@
+"use client";
+
 import Lottie from "lottie-react";
 import loaderBirdAnimation from "@/public/animations/loader-bird.json";
 
