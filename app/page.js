@@ -10,8 +10,8 @@ import {
   Shield,
   PlayCircle,
   Twitter,
-  Linkedin,
-  Github,
+  Instagram,
+  Youtube,
   Map,
   MessagesSquare,
 } from "lucide-react";
@@ -594,16 +594,28 @@ function HomeContent() {
               </p>
               <div className="flex gap-4">
                 <Link
-                  href="#"
+                  href="https://x.com/birdearner"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-purple-800/50 hover:bg-purple-700/50 flex items-center justify-center transition-colors"
                 >
                   <Twitter className="w-5 h-5 opacity-75 hover:opacity-100" />
                 </Link>
                 <Link
-                  href="#"
+                  href="https://www.instagram.com/thebirdearner"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-purple-800/50 hover:bg-purple-700/50 flex items-center justify-center transition-colors"
                 >
-                  <Linkedin className="w-5 h-5 opacity-75 hover:opacity-100" />
+                  <Instagram className="w-5 h-5 opacity-75 hover:opacity-100" />
+                </Link>
+                <Link
+                  href="https://www.youtube.com/@birdearner"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-lg bg-purple-800/50 hover:bg-purple-700/50 flex items-center justify-center transition-colors"
+                >
+                  <Youtube className="w-5 h-5 opacity-75 hover:opacity-100" />
                 </Link>
                 {/* <Link
                   href="#"
@@ -615,7 +627,7 @@ function HomeContent() {
             </div>
 
             {/* Product Column */}
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h3 className="text-lg font-semibold">Product</h3>
               <ul className="space-y-3">
                 <li>
@@ -651,10 +663,10 @@ function HomeContent() {
                   </Link>
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             {/* Company Column */}
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h3 className="text-lg font-semibold">Company</h3>
               <ul className="space-y-3">
                 <li>
@@ -690,9 +702,10 @@ function HomeContent() {
                   </Link>
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             {/* Newsletter Column */}
+            <div />
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Stay Updated</h3>
               <p className="text-purple-200/70">
@@ -713,27 +726,31 @@ function HomeContent() {
 
           <div className="mt-12 pt-6 border-t border-purple-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-purple-200/70">
-              © 2024 BirdEarner. All rights reserved.
+              © {new Date().getFullYear()} BirdEarner. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <Link
-                href="#"
+                href="https://www.termsfeed.com/live/b92f614b-fad8-4a63-a6e6-3d87f8afc321"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-purple-200/70 hover:text-white transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link
-                href="#"
+                href="https://www.termsfeed.com/live/b92f614b-fad8-4a63-a6e6-3d87f8afc321"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-purple-200/70 hover:text-white transition-colors"
               >
                 Terms of Service
               </Link>
-              <Link
+              {/* <Link
                 href="#"
                 className="text-purple-200/70 hover:text-white transition-colors"
               >
                 Cookie Policy
-              </Link>
+              </Link> */}
             </div>
           </div>
         </motion.div>
