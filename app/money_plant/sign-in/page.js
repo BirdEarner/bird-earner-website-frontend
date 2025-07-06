@@ -6,12 +6,14 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 
 export default function SuperAdminSignIn() {
   const router = useRouter();
   const { toast } = useToast();
+  const { login, loading: authLoading, error: authError } = useAdminAuth();
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -20,30 +22,25 @@ export default function SuperAdminSignIn() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // This is just for UI demonstration
-    // In a real app, you would validate credentials against your backend
-    if (formData.username === "admin" && formData.password === "password") {
-      // Set authentication state in localStorage
-      localStorage.setItem("superAdminAuth", "true");
+    try {
+      await login(formData.email, formData.password);
       
       toast({
         title: "Success",
-        description: "Welcome back, Super Admin!",
+        description: "Welcome back, Admin!",
         variant: "success",
       });
+      
       router.push("/money_plant/");
-    } else {
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Invalid credentials. Please try again.",
+        description: error.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -73,16 +70,16 @@ export default function SuperAdminSignIn() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-black">Username</label>
+              <label className="text-sm font-medium text-black">Email</label>
               <Input
                 required
-                type="text"
-                value={formData.username}
+                type="email"
+                value={formData.email}
                 onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
+                  setFormData({ ...formData, email: e.target.value })
                 }
                 className="border-purple-200 focus-visible:ring-purple-500"
-                placeholder="Enter your username"
+                placeholder="Enter your email"
               />
             </div>
             <div className="space-y-2">

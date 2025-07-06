@@ -1,5 +1,8 @@
 "use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Users, DollarSign, UserCheck, HelpCircle } from "lucide-react";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 import {
   LineChart,
   Line,
@@ -34,12 +37,37 @@ const pieData = [
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 
 export default function SuperAdminDashboard() {
+  const { isAuthenticated, loading, admin } = useAdminAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated()) {
+      router.push('/money_plant/sign-in');
+    }
+  }, [loading, isAuthenticated, router]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6 bg-purple-50/50">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!isAuthenticated()) {
+    return null;
+  }
+
   return (
     <div className="flex-1 space-y-6 p-6 bg-purple-50/50">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight text-black">Super Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-black">
+          Super Admin Dashboard
+        </h1>
         <p className="text-black/70">
-          Welcome back! Here's an overview of your platform.
+          Welcome back{admin?.name ? `, ${admin.name}` : ''}! Here's an overview of your platform.
         </p>
       </div>
 

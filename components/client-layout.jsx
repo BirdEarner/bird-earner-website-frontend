@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthProvider } from "@/hooks/AuthContext";
+import { AdminAuthProvider } from "@/hooks/AdminAuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Loader } from "@/components/ui/loader";
 import { useLoader } from "@/hooks/useLoader";
@@ -16,9 +17,11 @@ function ClientLayoutContent({ children }) {
 
   return (
     <AuthProvider>
-      <Loader isLoading={!mounted || isLoading} />
-      {mounted && children}
-      <Toaster />
+      <AdminAuthProvider>
+        <Loader isLoading={!mounted || isLoading} />
+        {mounted && children}
+        <Toaster />
+      </AdminAuthProvider>
     </AuthProvider>
   );
 }

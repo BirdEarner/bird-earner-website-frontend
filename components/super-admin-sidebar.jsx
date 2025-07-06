@@ -26,17 +26,18 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/AuthContext";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 import { useRouter } from "next/navigation";
 
 export function SuperAdminSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoaded, setIsLoaded] = useState(false);
-  const { logout } = useAuth();
+  const { logout, admin } = useAdminAuth();
 
   const handleLogout = async () => {
-    await logout();
-    router.push("/sign-in");
+    logout();
+    router.push("/money_plant/sign-in");
   };
 
   useEffect(() => {
@@ -87,17 +88,19 @@ export function SuperAdminSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Management</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <Link href="/money_plant/admin_management" passHref legacyBehavior>
-                <SidebarMenuButton
-                  tooltip="Admin Management"
-                  isActive={isActive("/money_plant/admin_management")}
-                >
-                  <UserCog className="text-muted-foreground" />
-                  <span>Admin Management</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
+            {admin?.role !== 'admin' && (
+              <SidebarMenuItem>
+                <Link href="/money_plant/admin_management" passHref legacyBehavior>
+                  <SidebarMenuButton
+                    tooltip="Admin Management"
+                    isActive={isActive("/money_plant/admin_management")}
+                  >
+                    <UserCog className="text-muted-foreground" />
+                    <span>Admin Management</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <Link href="/money_plant/clients" passHref legacyBehavior>
                 <SidebarMenuButton
