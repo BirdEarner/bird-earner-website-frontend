@@ -80,6 +80,8 @@ function HomeContent() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [ticketId, setTicketId] = useState('');
 
   useEffect(() => {
     const animateBird = () => {
@@ -188,6 +190,9 @@ function HomeContent() {
       
       // Handle success response
       if (response.success && response.data) {
+        setSubmissionSuccess(true);
+        setTicketId(response.data.ticket_id);
+        
         toast({
           title: "Message sent successfully!",
           description: `Thank you for reaching out! Your ticket ID is ${response.data.ticket_id}. We'll get back to you soon.`,
@@ -218,21 +223,66 @@ function HomeContent() {
             setFormErrors(newErrors);
             
             toast({
-              title: "Validation Error",
-              description: "Please check the highlighted fields and try again.",
+              title: "Please check your input",
+              description: "Some fields need your attention. Please review and try again.",
               variant: "destructive",
             });
             return;
           }
         } catch (parseError) {
-          // If parsing fails, show generic error
+          toast({
+            title: "Validation Error",
+            description: "Please check all fields and try again.",
+            variant: "destructive",
+          });
+          return;
         }
       }
       
-      // Generic error handling
+      // Handle network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        toast({
+          title: "Connection Error",
+          description: "Unable to connect to our servers. Please check your internet connection and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
+        toast({
+          title: "Request Timeout",
+          description: "The request took too long. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Handle server errors (5xx)
+      if (error.message.includes('500') || error.message.includes('server')) {
+        toast({
+          title: "Server Error",
+          description: "Our servers are experiencing issues. Please try again in a few minutes.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Handle rate limiting
+      if (error.message.includes('429') || error.message.includes('rate limit')) {
+        toast({
+          title: "Too Many Requests",
+          description: "You've sent too many messages. Please wait a moment before trying again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generic error handling with more helpful message
       toast({
         title: "Failed to send message",
-        description: "Please try again later or contact us directly at support@birdearner.com",
+        description: "We couldn't send your message right now. Please try again or contact us directly at support@birdearner.com",
         variant: "destructive",
       });
     } finally {
@@ -265,6 +315,13 @@ function HomeContent() {
         [name]: ''
       }));
     }
+  };
+
+  // Handle submit another message
+  const handleSubmitAnother = () => {
+    setSubmissionSuccess(false);
+    setTicketId('');
+    setFormErrors({});
   };
 
   const fadeIn = {
@@ -827,17 +884,7 @@ function HomeContent() {
                   </div>
                   <div>
                     <p className="font-semibold text-purple-900">Call Us</p>
-                    <p className="text-purple-700/70">+91 99213 18237</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-md">
-                    <MessagesSquare className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-purple-900">Live Chat</p>
-                    <p className="text-purple-700/70">Available 24/7</p>
+                    <p className="text-purple-700/70">+91 84597 23322</p>
                   </div>
                 </div>
               </div>
@@ -882,146 +929,207 @@ function HomeContent() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="bg-white rounded-2xl shadow-xl border border-purple-200/50 p-8"
             >
-              <form onSubmit={handleContactSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-purple-900 font-medium">
-                      Full Name *
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
-                      <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        placeholder="Your full name"
-                        value={contactForm.name}
-                        onChange={handleInputChange}
-                        required
-                        className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                          formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
-                      />
+              {!submissionSuccess ? (
+                <form onSubmit={handleContactSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-purple-900 font-medium">
+                        Full Name *
+                      </Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                        <Input
+                          id="name"
+                          name="name"
+                          type="text"
+                          placeholder="Your full name"
+                          value={contactForm.name}
+                          onChange={handleInputChange}
+                          required
+                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                            formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                      </div>
+                      {formErrors.name && (
+                        <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>
+                      )}
                     </div>
-                    {formErrors.name && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>
-                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-purple-900 font-medium">
+                        Email Address *
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={contactForm.email}
+                          onChange={handleInputChange}
+                          required
+                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                            formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
+                        />
+                      </div>
+                      {formErrors.email && (
+                        <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-purple-900 font-medium">
-                      Email Address *
+                    <Label htmlFor="phone" className="text-purple-900 font-medium">
+                      Phone Number *
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
                       <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="your.email@example.com"
-                        value={contactForm.email}
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+91 98765 43210"
+                        value={contactForm.phone}
                         onChange={handleInputChange}
                         required
                         className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                          formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                         }`}
                       />
                     </div>
-                    {formErrors.email && (
-                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                    {formErrors.phone && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.phone}</p>
                     )}
+                    <p className="text-xs text-purple-600">Please enter a valid phone number. It might be used for contacting you.</p>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-purple-900 font-medium">
-                    Phone Number *
-                  </Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                  <div className="space-y-2">
+                    <Label htmlFor="subject" className="text-purple-900 font-medium">
+                      Subject *
+                    </Label>
                     <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={contactForm.phone}
+                      id="subject"
+                      name="subject"
+                      type="text"
+                      placeholder="What's this about?"
+                      value={contactForm.subject}
                       onChange={handleInputChange}
                       required
-                      className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                        formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      maxLength={500}
+                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                        formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                       }`}
                     />
+                    {formErrors.subject && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.subject}</p>
+                    )}
+                    <p className="text-xs text-purple-600">{contactForm.subject.length}/500 characters</p>
                   </div>
-                  {formErrors.phone && (
-                    <p className="text-sm text-red-600 mt-1">{formErrors.phone}</p>
-                  )}
-                  <p className="text-xs text-purple-600">Please enter a valid phone number. It might be used for contacting you.</p>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="subject" className="text-purple-900 font-medium">
-                    Subject *
-                  </Label>
-                  <Input
-                    id="subject"
-                    name="subject"
-                    type="text"
-                    placeholder="What's this about?"
-                    value={contactForm.subject}
-                    onChange={handleInputChange}
-                    required
-                    maxLength={500}
-                    className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                      formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                    }`}
-                  />
-                  {formErrors.subject && (
-                    <p className="text-sm text-red-600 mt-1">{formErrors.subject}</p>
-                  )}
-                  <p className="text-xs text-purple-600">{contactForm.subject.length}/500 characters</p>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="text-purple-900 font-medium">
+                      Message *
+                    </Label>
+                    <Textarea
+                      id="message"
+                      name="message"
+                      placeholder="Tell us more about your inquiry..."
+                      value={contactForm.message}
+                      onChange={handleInputChange}
+                      required
+                      rows={5}
+                      maxLength={5000}
+                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 resize-none ${
+                        formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
+                    />
+                    {formErrors.message && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.message}</p>
+                    )}
+                    <p className="text-xs text-purple-600">{contactForm.message.length}/5000 characters</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="text-purple-900 font-medium">
-                    Message *
-                  </Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    placeholder="Tell us more about your inquiry..."
-                    value={contactForm.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={5}
-                    maxLength={5000}
-                    className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 resize-none ${
-                      formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                    }`}
-                  />
-                  {formErrors.message && (
-                    <p className="text-sm text-red-600 mt-1">{formErrors.message}</p>
-                  )}
-                  <p className="text-xs text-purple-600">{contactForm.message.length}/5000 characters</p>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Send className="w-5 h-5" />
+                        Send Message
+                      </div>
+                    )}
+                  </Button>
+                </form>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center space-y-6 py-8"
                 >
-                  {isSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Sending...
+                  <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                    <CheckCircle className="w-10 h-10 text-white" />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-bold text-purple-900">
+                      Message Sent Successfully!
+                    </h3>
+                    <p className="text-purple-700/80 text-lg">
+                      Thank you for reaching out to us. We've received your message and will get back to you as soon as possible.
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 space-y-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">#</span>
+                      </div>
+                      <span className="text-purple-900 font-semibold">Your Reference ID</span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Send className="w-5 h-5" />
-                      Send Message
+                    <div className="bg-white border border-purple-200 rounded-lg p-4">
+                      <code className="text-xl font-mono font-bold text-purple-800 tracking-wider">
+                        {ticketId}
+                      </code>
                     </div>
-                  )}
-                </Button>
-              </form>
+                    <p className="text-sm text-purple-600">
+                      Please save this reference ID for your records. You can use it to track your inquiry.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center justify-center gap-2 text-purple-700">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>We typically respond within 24 hours</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 text-purple-700">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <span>Check your email for updates</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 pt-6">
+                    <Button
+                      onClick={handleSubmitAnother}
+                      variant="outline"
+                      className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800 py-3"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit Another Message
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </motion.div>
