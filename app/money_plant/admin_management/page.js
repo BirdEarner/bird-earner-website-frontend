@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Plus, Trash2, Mail, Shield, User, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
+import { adminAuthApi } from "@/services/api";
 
 export default function AdminManagementPage() {
   const { toast } = useToast();
+  const { getToken, admin: currentAdmin } = useAdminAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [admins, setAdmins] = useState([]);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -33,57 +38,52 @@ export default function AdminManagementPage() {
     confirmPassword: "",
   });
 
-  // Mock data for demonstration
-  const [admins] = useState([
-    {
-      id: 1,
-      fullName: "John Doe",
-      email: "john@example.com",
-      role: "Super Admin",
-      lastActive: "2024-03-15T10:30:00",
-      status: "active",
-    },
-    {
-      id: 2,
-      fullName: "Jane Smith",
-      email: "jane@example.com",
-      role: "Admin",
-      lastActive: "2024-03-14T15:45:00",
-      status: "active",
-    },
-    {
-      id: 3,
-      fullName: "Mike Johnson",
-      email: "mike@example.com",
-      role: "Admin",
-      lastActive: "2024-03-13T09:20:00",
-      status: "inactive",
-    },
-    {
-      id: 4,
-      fullName: "Sarah Wilson",
-      email: "sarah@example.com",
-      role: "Admin",
-      lastActive: "2024-03-12T14:20:00",
-      status: "active",
-    },
-    {
-      id: 5,
-      fullName: "Tom Brown",
-      email: "tom@example.com",
-      role: "Admin",
-      lastActive: "2024-03-11T11:20:00",
-      status: "active",
-    },
-    {
-      id: 6,
-      fullName: "Emily Davis",
-      email: "emily@example.com",
-      role: "Admin",
-      lastActive: "2024-03-10T16:20:00",
-      status: "inactive",
-    },
-  ]);
+  // Fetch admins on component mount
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    try {
+      setIsLoadingAdmins(true);
+      const token = getToken();
+      console.log('Fetching admins with token:', token); // Debug log
+      const adminsList = await adminAuthApi.getAllAdmins(token);
+      
+      // Transform the data to match the expected format
+      const transformedAdmins = adminsList.map(admin => ({
+        id: admin.id,
+        fullName: admin.name,
+        email: admin.email,
+        role: admin.role === 'superadmin' ? 'Super Admin' : 'Admin',
+        lastActive: admin.updated_at || admin.created_at,
+        status: 'active', // For now, assume all are active since we don't have this field in DB
+      }));
+      
+      setAdmins(transformedAdmins);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch admin list. Using fallback data.",
+      });
+      
+      // Fallback: show current admin at least
+      if (currentAdmin) {
+        setAdmins([{
+          id: currentAdmin.id,
+          fullName: currentAdmin.name,
+          email: currentAdmin.email,
+          role: currentAdmin.role === 'superadmin' ? 'Super Admin' : 'Admin',
+          lastActive: new Date().toISOString(),
+          status: 'active',
+        }]);
+      }
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  };
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
@@ -100,38 +100,69 @@ export default function AdminManagementPage() {
       return;
     }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Call the backend API to create a new admin
+      await adminAuthApi.signup(
+        formData.fullName,
+        formData.email,
+        formData.password,
+        'admin' // Default role is admin
+      );
 
-    toast({
-      title: "Success",
-      description: "Admin account created successfully.",
-      variant: "success",
-    });
+      toast({
+        title: "Success",
+        description: "Admin account created successfully.",
+        variant: "success",
+      });
 
-    setIsLoading(false);
-    setIsDialogOpen(false);
-    setFormData({
-      fullName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
+      // Reset form and close dialog
+      setFormData({
+        fullName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      setIsDialogOpen(false);
+      
+      // Refresh the admin list
+      await fetchAdmins();
+
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to create admin account.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteAdmin = async (adminId) => {
-    setIsLoading(true);
+    try {
+      setIsLoading(true);
+      const token = getToken();
+      
+      await adminAuthApi.deleteAdmin(token, adminId);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      toast({
+        title: "Success",
+        description: "Admin account deleted successfully.",
+        variant: "success",
+      });
 
-    toast({
-      title: "Success",
-      description: "Admin account deleted successfully.",
-      variant: "success",
-    });
+      // Refresh the admin list
+      await fetchAdmins();
 
-    setIsLoading(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete admin account.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredAdmins = admins.filter(
@@ -208,7 +239,23 @@ export default function AdminManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {currentItems.map((admin) => (
+              {isLoadingAdmins ? (
+                <tr>
+                  <td colSpan="5" className="px-4 py-8 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-500 border-t-transparent"></div>
+                      <span className="ml-2 text-purple-600">Loading admins...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                    No admins found.
+                  </td>
+                </tr>
+              ) : (
+                currentItems.map((admin) => (
                 <tr
                   key={admin.id}
                   className="border-b border-purple-100 last:border-0"
@@ -247,10 +294,10 @@ export default function AdminManagementPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {admin.role !== "Super Admin" && (
+                    {admin.role !== "Super Admin" && admin.id !== currentAdmin?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" disabled={isLoading}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -258,6 +305,7 @@ export default function AdminManagementPage() {
                           <DropdownMenuItem
                             className="flex items-center gap-2 text-red-600"
                             onClick={() => handleDeleteAdmin(admin.id)}
+                            disabled={isLoading}
                           >
                             <Trash2 className="h-4 w-4" />
                             <span>Delete Admin</span>
@@ -267,7 +315,8 @@ export default function AdminManagementPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -413,4 +462,4 @@ export default function AdminManagementPage() {
       </Dialog>
     </div>
   );
-} 
+}

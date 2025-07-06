@@ -4,22 +4,22 @@ import { useRouter, usePathname } from "next/navigation";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { SuperAdminSidebar } from "@/components/super-admin-sidebar";
 import { Toaster } from "@/components/ui/toaster";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 
 export default function Layout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { isAuthenticated, loading } = useAdminAuth();
 
   useEffect(() => {
-    // Skip auth check for sign-in page
-    if (pathname === "/money_plant/sign-in") return;
+    // Skip auth check for sign-in page or while loading
+    if (pathname === "/money_plant/sign-in" || loading) return;
 
-    // Check if user is authenticated using localStorage
-    const isAuthenticated = localStorage.getItem("superAdminAuth") === "true";
-
-    if (!isAuthenticated) {
+    // Check if user is authenticated
+    if (!isAuthenticated()) {
       router.push("/money_plant/sign-in");
     }
-  }, [pathname, router]);
+  }, [pathname, router, isAuthenticated, loading]);
 
   // Don't show sidebar on sign-in page
   if (pathname === "/money_plant/sign-in") {
