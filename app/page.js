@@ -14,8 +14,18 @@ import {
   Youtube,
   Map,
   MessagesSquare,
+  Mail,
+  User,
+  Phone,
+  Send,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { contactApi } from "@/services/api";
 import birdyAnimation from "@/public/animations/birdy.json";
 import clientAnimation from "@/public/animations/client.json";
 import manAnimation from "@/public/animations/man.json";
@@ -58,6 +68,18 @@ function HomeContent() {
   const cursorPosition = useCursorPosition();
   const [birdPosition, setBirdPosition] = useState({ x: 0, y: 0 });
   const [isMovingRight, setIsMovingRight] = useState(false);
+  const { toast } = useToast();
+
+  // Contact form state
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const animateBird = () => {
@@ -77,6 +99,173 @@ function HomeContent() {
     const animationFrame = requestAnimationFrame(animateBird);
     return () => cancelAnimationFrame(animationFrame);
   }, [cursorPosition.x, cursorPosition.y, birdPosition.x, birdPosition.y]);
+
+  // Validation functions
+  const validateForm = () => {
+    const errors = {};
+
+    // Name validation
+    if (!contactForm.name.trim()) {
+      errors.name = 'Full name is required';
+    } else if (contactForm.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s'-]+$/.test(contactForm.name)) {
+      errors.name = 'Name can only contain letters, spaces, hyphens, and apostrophes';
+    }
+
+    // Email validation
+    if (!contactForm.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactForm.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Phone validation (International format)
+    if (!contactForm.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(contactForm.phone.replace(/\s+/g, ''))) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    // Subject validation
+    if (!contactForm.subject.trim()) {
+      errors.subject = 'Subject is required';
+    } else if (contactForm.subject.trim().length < 5) {
+      errors.subject = 'Subject must be at least 5 characters long';
+    } else if (contactForm.subject.trim().length > 500) {
+      errors.subject = 'Subject cannot exceed 500 characters';
+    }
+
+    // Message validation
+    if (!contactForm.message.trim()) {
+      errors.message = 'Message is required';
+    } else if (contactForm.message.trim().length < 10) {
+      errors.message = 'Message must be at least 10 characters long';
+    } else if (contactForm.message.trim().length > 5000) {
+      errors.message = 'Message cannot exceed 5000 characters';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Format phone number as user types (simplified for international use)
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit and non-plus characters
+    const phoneNumber = value.replace(/[^\d\+]/g, '');
+    
+    // Limit to reasonable length (max 16 characters including +)
+    if (phoneNumber.length <= 16) {
+      return phoneNumber;
+    }
+    return contactForm.phone; // Return previous value if too long
+  };
+
+  // Handle contact form submission
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Clear previous errors
+    setFormErrors({});
+    
+    // Validate form
+    if (!validateForm()) {
+      toast({
+        title: "Please fix the errors below",
+        description: "Check all required fields and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await contactApi.submitContactForm({
+        ...contactForm,
+        phone: contactForm.phone.replace(/\s+/g, '') // Remove spaces before sending
+      });
+      
+      // Handle success response
+      if (response.success && response.data) {
+        toast({
+          title: "Message sent successfully!",
+          description: `Thank you for reaching out! Your ticket ID is ${response.data.ticket_id}. We'll get back to you soon.`,
+        });
+        
+        // Reset form
+        setContactForm({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+        setFormErrors({});
+      }
+    } catch (error) {
+      console.error('Contact form error:', error);
+      
+      // Handle API validation errors
+      if (error.message && error.message.includes('Validation error')) {
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            const newErrors = {};
+            errorData.errors.forEach(err => {
+              newErrors[err.field] = err.message;
+            });
+            setFormErrors(newErrors);
+            
+            toast({
+              title: "Validation Error",
+              description: "Please check the highlighted fields and try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+        } catch (parseError) {
+          // If parsing fails, show generic error
+        }
+      }
+      
+      // Generic error handling
+      toast({
+        title: "Failed to send message",
+        description: "Please try again later or contact us directly at support@birdearner.com",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Special handling for phone number formatting
+    if (name === 'phone') {
+      const formattedPhone = formatPhoneNumber(value);
+      setContactForm(prev => ({
+        ...prev,
+        [name]: formattedPhone
+      }));
+    } else {
+      setContactForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -146,6 +335,14 @@ function HomeContent() {
                 FAQs
               </Button>
             </Link>
+            <a href="#contact">
+              <Button
+                variant="ghost"
+                className="text-purple-600 hover:text-purple-700 hover:bg-purple-100/50"
+              >
+                Contact
+              </Button>
+            </a>
             <Link href="/sign-in">
               <Button
                 variant="ghost"
@@ -553,6 +750,280 @@ function HomeContent() {
               ]}
             />
           </motion.div>
+        </motion.div>
+      </motion.section>
+
+      {/* Contact Section */}
+      <motion.section
+        id="contact"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.2 }}
+        className="py-24 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-white to-purple-50 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.1),transparent)] pointer-events-none"></div>
+        
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="container mx-auto relative z-10"
+        >
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="text-4xl lg:text-5xl font-bold mb-6"
+            >
+              <span className="bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent">
+                Get in Touch
+              </span>
+            </motion.h2>
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="text-xl text-purple-700/70 max-w-2xl mx-auto"
+            >
+              Have questions or suggestions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+            {/* Contact Info */}
+            <motion.div
+              initial={{ x: -50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="space-y-8"
+            >
+              <div>
+                <h3 className="text-2xl font-bold text-purple-900 mb-6">Let's Connect</h3>
+                <p className="text-lg text-purple-700/80 mb-8">
+                  Ready to start your journey with BirdEarner? We're here to help you every step of the way.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-md">
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-purple-900">Email Us</p>
+                    <p className="text-purple-700/70">support@birdearner.com</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-md">
+                    <Phone className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-purple-900">Call Us</p>
+                    <p className="text-purple-700/70">+91 99213 18237</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-md">
+                    <MessagesSquare className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-purple-900">Live Chat</p>
+                    <p className="text-purple-700/70">Available 24/7</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Links */}
+              <div className="pt-8">
+                <p className="text-lg font-semibold text-purple-900 mb-4">Follow Us</p>
+                <div className="flex gap-4">
+                  <Link
+                    href="https://x.com/birdearner"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg"
+                  >
+                    <Twitter className="w-5 h-5 text-white" />
+                  </Link>
+                  <Link
+                    href="https://www.instagram.com/thebirdearner"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg"
+                  >
+                    <Instagram className="w-5 h-5 text-white" />
+                  </Link>
+                  <Link
+                    href="https://www.youtube.com/@birdearner"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 flex items-center justify-center transition-all duration-300 shadow-md hover:shadow-lg"
+                  >
+                    <Youtube className="w-5 h-5 text-white" />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Contact Form */}
+            <motion.div
+              initial={{ x: 50, opacity: 0 }}
+              whileInView={{ x: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="bg-white rounded-2xl shadow-xl border border-purple-200/50 p-8"
+            >
+              <form onSubmit={handleContactSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-purple-900 font-medium">
+                      Full Name *
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                      <Input
+                        id="name"
+                        name="name"
+                        type="text"
+                        placeholder="Your full name"
+                        value={contactForm.name}
+                        onChange={handleInputChange}
+                        required
+                        className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                          formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
+                      />
+                    </div>
+                    {formErrors.name && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-purple-900 font-medium">
+                      Email Address *
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={contactForm.email}
+                        onChange={handleInputChange}
+                        required
+                        className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                          formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
+                      />
+                    </div>
+                    {formErrors.email && (
+                      <p className="text-sm text-red-600 mt-1">{formErrors.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-purple-900 font-medium">
+                    Phone Number *
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-purple-500" />
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={contactForm.phone}
+                      onChange={handleInputChange}
+                      required
+                      className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                        formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                      }`}
+                    />
+                  </div>
+                  {formErrors.phone && (
+                    <p className="text-sm text-red-600 mt-1">{formErrors.phone}</p>
+                  )}
+                  <p className="text-xs text-purple-600">Please enter a valid phone number. It might be used for contacting you.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="subject" className="text-purple-900 font-medium">
+                    Subject *
+                  </Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    type="text"
+                    placeholder="What's this about?"
+                    value={contactForm.subject}
+                    onChange={handleInputChange}
+                    required
+                    maxLength={500}
+                    className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
+                      formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                  />
+                  {formErrors.subject && (
+                    <p className="text-sm text-red-600 mt-1">{formErrors.subject}</p>
+                  )}
+                  <p className="text-xs text-purple-600">{contactForm.subject.length}/500 characters</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message" className="text-purple-900 font-medium">
+                    Message *
+                  </Label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="Tell us more about your inquiry..."
+                    value={contactForm.message}
+                    onChange={handleInputChange}
+                    required
+                    rows={5}
+                    maxLength={5000}
+                    className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 resize-none ${
+                      formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                  />
+                  {formErrors.message && (
+                    <p className="text-sm text-red-600 mt-1">{formErrors.message}</p>
+                  )}
+                  <p className="text-xs text-purple-600">{contactForm.message.length}/5000 characters</p>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sending...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Send className="w-5 h-5" />
+                      Send Message
+                    </div>
+                  )}
+                </Button>
+              </form>
+            </motion.div>
+          </div>
         </motion.div>
       </motion.section>
 
