@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { databases, appwriteConfig } from "@/hooks/appwrite_config";
-import { Query } from "appwrite";
+import { adminPaymentApi } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Pagination,
@@ -28,40 +27,22 @@ export default function PaymentHistoryPage() {
     async function fetchPaymentHistory() {
       try {
         setIsLoading(true);
-        const paymentResponse = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.paymentHistoryCollectionId,
-          [Query.orderDesc("date")]
-        );
-
-        // Get user details for each payment
-        const paymentsWithDetails = await Promise.all(
-          paymentResponse.documents.map(async (payment) => {
-            try {
-              const user = await databases.getDocument(
-                appwriteConfig.databaseId,
-                appwriteConfig.clientCollectionId,
-                payment.userId
-              );
-
-              return {
-                id: payment.$id,
-                user: user.full_name,
-                userEmail: user.email,
-                paymentId: payment.paymentId,
-                amount: payment.amount,
-                status: payment.status,
-                date: payment.date,
-                userDetails: user,
-              };
-            } catch (error) {
-              console.error("Error fetching user details:", error);
-              return null;
-            }
-          })
-        );
-
-        setPaymentHistory(paymentsWithDetails.filter(Boolean));
+        const res = await adminPaymentApi.getPaymentHistory({
+          page: currentPage,
+          pageSize: itemsPerPage,
+          search: searchQuery,
+        });
+        setPaymentHistory(res.payments.map((payment) => ({
+          id: payment.id,
+          user: payment.userName,
+          userEmail: payment.userEmail,
+          paymentId: payment.transactionId,
+          amount: payment.amount,
+          status: payment.status,
+          date: payment.date,
+          paymentMethod: payment.paymentMethod,
+          description: payment.description,
+        })));
       } catch (error) {
         console.error("Error fetching payment history:", error);
         toast({
@@ -75,18 +56,20 @@ export default function PaymentHistoryPage() {
     }
 
     fetchPaymentHistory();
-  }, []);
+  }, [currentPage, searchQuery]);
 
-  const filteredPayments = paymentHistory.filter((payment) =>
-    payment.user.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPayments = paymentHistory;
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case "success":
+      case "completed":
         return "bg-green-100 text-green-700";
       case "failed":
         return "bg-red-100 text-red-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "cancelled":
+        return "bg-gray-100 text-gray-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -154,7 +137,7 @@ export default function PaymentHistoryPage() {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-purple-500" />
           <Input
-            placeholder="Search by client name..."
+            placeholder="Search by user name or transaction ID..."
             className="pl-8 border-purple-200 focus-visible:ring-purple-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -168,13 +151,16 @@ export default function PaymentHistoryPage() {
             <thead>
               <tr className="border-b border-purple-200 bg-purple-50/50">
                 <th className="px-4 py-3 text-left text-sm font-medium text-purple-600">
-                  Client
+                  User
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-purple-600">
-                  Payment ID
+                  Transaction ID
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-purple-600">
                   Amount
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-purple-600">
+                  Method
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-purple-600">
                   Date
@@ -204,7 +190,10 @@ export default function PaymentHistoryPage() {
                     {payment.paymentId}
                   </td>
                   <td className="px-4 py-3 text-sm text-black">
-                    ${payment.amount}
+                    ₹{payment.amount}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-black">
+                    {payment.paymentMethod || 'N/A'}
                   </td>
                   <td className="px-4 py-3 text-sm text-black">
                     {new Date(payment.date).toLocaleDateString()}

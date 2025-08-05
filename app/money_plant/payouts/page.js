@@ -20,8 +20,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { databases, appwriteConfig } from "@/hooks/appwrite_config";
-import { Query } from "appwrite";
+import { adminWithdrawalApi } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import {
 	Select,
@@ -51,101 +50,67 @@ export default function PayoutsPage() {
 	const itemsPerPage = 8;
 	const { toast } = useToast();
 
-	useEffect(() => {
-		async function fetchData() {
-			try {
-				setIsLoading(true);
-
-				const withdrawalResponse = await databases.listDocuments(
-					appwriteConfig.databaseId,
-					appwriteConfig.withdrawalRequestsCollectionId,
-					[Query.orderDesc("createdAt")]
-				);
-
-				const requestsWithDetails = await Promise.all(
-					withdrawalResponse.documents.map(async (request) => {
-						try {
-							const freelancer = await databases.getDocument(
-								appwriteConfig.databaseId,
-								appwriteConfig.freelancerCollectionId,
-								request.freelancerId
-							);
-
-							return {
-								id: request.$id,
-								freelancer: freelancer.full_name,
-								freelancerEmail: freelancer.email,
-								amount: request.requestedAmount,
-								status: request.status,
-								requestDate: request.createdAt,
-								freelancerDetails: freelancer,
-							};
-						} catch (error) {
-							console.error("Error fetching freelancer details:", error);
-							return null;
-						}
-					})
-				);
-
-				setWithdrawalRequests(requestsWithDetails.filter(Boolean));
-			} catch (error) {
-				console.error("Error fetching data:", error);
-				toast({
-					variant: "destructive",
-					title: "Error",
-					description: "Failed to fetch withdrawal requests. Please try again.",
-				});
-			} finally {
-				setIsLoading(false);
-			}
-		}
-
-		fetchData();
-	}, []);
-
-	const handleUpdateStatus = async (id, newStatus) => {
+useEffect(() => {
+	async function fetchData() {
 		try {
 			setIsLoading(true);
-
-			await databases.updateDocument(
-				appwriteConfig.databaseId,
-				appwriteConfig.withdrawalRequestsCollectionId,
-				id,
-				{
-					status: newStatus,
-					updatedAt: new Date().toISOString(),
-				}
-			);
-
-			setWithdrawalRequests(
-				withdrawalRequests.map((request) =>
-					request.id === id ? { ...request, status: newStatus } : request
-				)
-			);
-
-			toast({
-				title: "Success",
-				description: `Withdrawal request ${newStatus}`,
-				variant: "success",
+			const res = await adminWithdrawalApi.getWithdrawalRequests({
+				page: currentPage,
+				pageSize: itemsPerPage,
+				status: statusFilter,
+				search: searchQuery,
 			});
-
-			setIsDialogOpen(false);
+			setWithdrawalRequests(res.requests.map((request) => ({
+				id: request.id,
+				freelancer: request.freelancer,
+				freelancerEmail: request.freelancerEmail,
+				amount: request.amount,
+				status: request.status,
+				requestDate: request.requestDate,
+				bankAccount: request.bankAccount,
+			})));
 		} catch (error) {
-			console.error("Error updating status:", error);
+			console.error("Error fetching data:", error);
 			toast({
 				variant: "destructive",
 				title: "Error",
-				description: "Failed to update status. Please try again.",
+				description: "Failed to fetch withdrawal requests. Please try again.",
 			});
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}
+	fetchData();
+}, [currentPage, statusFilter, searchQuery]);
 
-	const filteredWithdrawals = withdrawalRequests.filter(request =>
-		(request.freelancer.toLowerCase().includes(searchQuery.toLowerCase())) &&
-		(statusFilter === "all" || request.status === statusFilter)
-	);
+const handleUpdateStatus = async (id, newStatus) => {
+	try {
+		setIsLoading(true);
+		await adminWithdrawalApi.updateWithdrawalStatus(id, newStatus);
+		setWithdrawalRequests(
+			withdrawalRequests.map((request) =>
+				request.id === id ? { ...request, status: newStatus } : request
+			)
+		);
+		toast({
+			title: "Success",
+			description: `Withdrawal request ${newStatus}`,
+			variant: "success",
+		});
+		setIsDialogOpen(false);
+	} catch (error) {
+		console.error("Error updating status:", error);
+		toast({
+			variant: "destructive",
+			title: "Error",
+			description: "Failed to update status. Please try again.",
+		});
+	} finally {
+		setIsLoading(false);
+	}
+};
+
+const filteredWithdrawals = withdrawalRequests;
 
 	const getStatusColor = (status) => {
 		switch (status.toLowerCase()) {
@@ -403,15 +368,13 @@ export default function PayoutsPage() {
 									<div>
 										<p className="font-medium text-black">Bank Details</p>
 										<div className="text-sm text-gray-500 space-y-1">
-											<p>Bank: {selectedRequest.freelancerDetails.bankName}</p>
-											<p>
-												Account Holder:{" "}
-												{selectedRequest.freelancerDetails.accountHolderName}
-											</p>
-											<p>
-												Account Number:{" "}
-												{selectedRequest.freelancerDetails.accountNumber}
-											</p>
+<p>Bank: {selectedRequest.bankAccount?.bankName || "-"}</p>
+<p>
+	Account Holder: {selectedRequest.bankAccount?.accountHolderName || "-"}
+</p>
+<p>
+	Account Number: {selectedRequest.bankAccount?.accountNumber || "-"}
+</p>
 										</div>
 									</div>
 								</div>

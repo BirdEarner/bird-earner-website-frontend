@@ -10,8 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { databases, appwriteConfig } from "@/hooks/appwrite_config";
-import { Query } from "appwrite";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Pagination,
@@ -28,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { adminClientApi, loadImageURI } from "@/services/api";
 
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,77 +37,41 @@ export default function ClientsPage() {
   const itemsPerPage = 8;
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAssignmentsOpen, setIsAssignmentsOpen] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
 
   useEffect(() => {
     async function fetchClients() {
       try {
         setIsLoading(true);
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.clientCollectionId,
-          [Query.orderDesc("created_at")]
-        );
+        const response = await adminClientApi.getAllClients(currentPage, itemsPerPage, debouncedSearchQuery);
 
-        // Fetch job assignments for each client
-        const clientsWithDetails = await Promise.all(
-          response.documents.map(async (client) => {
-            try {
-              // Fetch all jobs
-              const jobs = await databases.listDocuments(
-                appwriteConfig.databaseId,
-                appwriteConfig.jobCollectionID,
-                [Query.equal("job_created_by", [client.$id])]
-              );
-
-              // Get all freelancers who applied or were assigned to the jobs
-              const freelancerDetailsMap = new Map();
-              await Promise.all(
-                jobs.documents.flatMap(job => {
-                  const allFreelancerIds = [
-                    ...(job.applied_freelancers || []),
-                    job.assigned_freelancer
-                  ].filter(Boolean);
-                  
-                  return allFreelancerIds.map(async (freelancerId) => {
-                    try {
-                      // Only fetch freelancer details if we haven't seen this freelancer before
-                      if (!freelancerDetailsMap.has(freelancerId)) {
-                        const freelancer = await databases.getDocument(
-                          appwriteConfig.databaseId,
-                          appwriteConfig.freelancerCollectionId,
-                          freelancerId
-                        );
-
-                        freelancerDetailsMap.set(freelancerId, {
-                          id: freelancer.$id,
-                          name: freelancer.full_name,
-                          email: freelancer.email,
-                          expertise: freelancer.role_designation,
-                          status: freelancer.$id === job.assigned_freelancer ? 'Assigned' : 'Applied'
-                        });
-                      }
-                    } catch (error) {
-                      console.error("Error fetching freelancer details:", error);
-                    }
-                  });
-                })
-              );
-
-              // Convert Map values to array for assignedFreelancers
-              const uniqueFreelancerDetails = Array.from(freelancerDetailsMap.values());
-
-              return {
-                ...client,
-                assignedFreelancers: uniqueFreelancerDetails
-              };
-            } catch (error) {
-              console.error("Error fetching details:", error);
-              return client;
-            }
-          })
-        );
-
-        setClients(clientsWithDetails);
+        if (response.success) {
+          setClients(response.data.clients);
+          // Update pagination info if provided
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages);
+            setTotalItems(response.data.pagination.totalItems);
+            setCurrentPage(response.data.pagination.currentPage);
+          }
+        } else {
+          throw new Error(response.message || 'Failed to fetch clients');
+        }
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast({
@@ -122,29 +85,25 @@ export default function ClientsPage() {
     }
 
     fetchClients();
-  }, []);
+  }, [currentPage, debouncedSearchQuery]);
 
   const handleUpdateAvailability = async (clientId, newAvailability) => {
     try {
-      await databases.updateDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.clientCollectionId,
-        clientId,
-        {
-          currently_available: newAvailability,
-          updated_at: new Date().toISOString()
-        }
-      );
+      const response = await adminClientApi.updateClientAvailability(clientId, newAvailability);
 
-      setClients(clients.map(client =>
-        client.$id === clientId ? { ...client, currently_available: newAvailability } : client
-      ));
+      if (response.success) {
+        setClients(clients.map(client =>
+          client.$id === clientId ? { ...client, currently_available: newAvailability } : client
+        ));
 
-      toast({
-        title: "Success",
-        description: `Client ${newAvailability ? 'activated' : 'deactivated'} successfully`,
-        variant: "success",
-      });
+        toast({
+          title: "Success",
+          description: `Client ${newAvailability ? 'activated' : 'deactivated'} successfully`,
+          variant: "success",
+        });
+      } else {
+        throw new Error(response.message || 'Failed to update client availability');
+      }
     } catch (error) {
       console.error("Error updating client availability:", error);
       toast({
@@ -155,16 +114,9 @@ export default function ClientsPage() {
     }
   };
 
-  const filteredClients = clients.filter(client =>
-    client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentClients = filteredClients.slice(startIndex, endIndex);
+  // Since filtering and pagination are now handled by the backend,
+  // we can use the clients directly without client-side filtering
+  const currentClients = clients;
 
   // Function to generate page numbers array
   const getPageNumbers = (currentPage, totalPages) => {
@@ -250,15 +202,15 @@ export default function ClientsPage() {
                     <div className="flex items-center gap-3">
                       {client.profile_photo ? (
                         <img 
-                          src={client.profile_photo} 
+                          src={loadImageURI(client.profile_photo)} 
                           alt={client.full_name}
                           className="h-8 w-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-purple-600">
-                            {client.full_name?.charAt(0)}
-                          </span>
+                        <div className="h-7 w-7 rounded-full bg-purple-100 flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9.001 9.001 0 0112 15c2.21 0 4.21.805 5.879 2.146M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
                         </div>
                       )}
                       <div>

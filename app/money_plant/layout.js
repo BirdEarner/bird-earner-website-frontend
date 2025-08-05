@@ -9,9 +9,12 @@ import { useAdminAuth } from "@/hooks/AdminAuthContext";
 export default function Layout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, loading } = useAdminAuth();
+  const { isAuthenticated, loading, admin } = useAdminAuth();
 
   useEffect(() => {
+
+    console.log({ pathname, loading, isAuthenticated:isAuthenticated() });
+    
     // Skip auth check for sign-in page or while loading
     if (pathname === "/money_plant/sign-in" || loading) return;
 

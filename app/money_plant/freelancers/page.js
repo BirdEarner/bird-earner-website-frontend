@@ -29,6 +29,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { adminFreelancerApi, loadImageURI } from "@/services/api";
 
 export default function FreelancersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,118 +43,14 @@ export default function FreelancersPage() {
   const [isAssignmentsOpen, setIsAssignmentsOpen] = useState(false);
 
   useEffect(() => {
+    let ignore = false;
     async function fetchFreelancers() {
       try {
         setIsLoading(true);
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.freelancerCollectionId,
-          [Query.orderDesc("created_at")]
-        );
-
-        // Fetch reviews and job assignments for each freelancer
-        const freelancersWithDetails = await Promise.all(
-          response.documents.map(async (freelancer) => {
-            try {
-              // Fetch reviews
-              const reviews = await databases.listDocuments(
-                appwriteConfig.databaseId,
-                appwriteConfig.reviewCollectionId,
-                [Query.equal("receiverId", [freelancer.$id])]
-              );
-
-              // Calculate average rating
-              const ratings = reviews.documents.map(review => parseFloat(review.rating) || 0);
-              const averageRating = ratings.length > 0
-                ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-                : null;
-
-              // Get reviewer details for each review
-              const reviewsWithDetails = await Promise.all(
-                reviews.documents.map(async (review) => {
-                  try {
-                    // Try to get the reviewer's details (could be either client or freelancer)
-                    const reviewer = await databases.getDocument(
-                      appwriteConfig.databaseId,
-                      appwriteConfig.clientCollectionId,
-                      review.giverId
-                    ).catch(async () => {
-                      // If not found in clients, try freelancers
-                      return await databases.getDocument(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.freelancerCollectionId,
-                        review.giverId
-                      );
-                    });
-
-                    return {
-                      ...review,
-                      reviewer: reviewer ? {
-                        name: reviewer.full_name,
-                        type: reviewer.$collectionId === appwriteConfig.clientCollectionId ? 'Client' : 'Freelancer'
-                      } : null
-                    };
-                  } catch (error) {
-                    console.error("Error fetching reviewer details:", error);
-                    return review;
-                  }
-                })
-              );
-
-              // Fetch assigned jobs with client details
-              const clientDetailsMap = new Map();
-              await Promise.all(
-                (freelancer.assigned_jobs || []).map(async (jobId) => {
-                  try {
-                    const job = await databases.getDocument(
-                      appwriteConfig.databaseId,
-                      appwriteConfig.jobCollectionID,
-                      jobId
-                    );
-
-                    // Check if job exists and has a client reference
-                    if (!job || !job.job_created_by) {
-                      console.error("Job not found or missing creator reference:", jobId);
-                      return;
-                    }
-
-                    // Only fetch client details if we haven't seen this client before
-                    if (!clientDetailsMap.has(job.job_created_by)) {
-                      const client = await databases.getDocument(
-                        appwriteConfig.databaseId,
-                        appwriteConfig.clientCollectionId,
-                        job.job_created_by
-                      );
-
-                      clientDetailsMap.set(job.job_created_by, {
-                        id: client.$id,
-                        name: client.full_name,
-                        email: client.email
-                      });
-                    }
-                  } catch (error) {
-                    console.error("Error fetching client details:", error);
-                  }
-                })
-              );
-
-              // Convert Map values to array for assignedClients
-              const uniqueClientDetails = Array.from(clientDetailsMap.values());
-
-              return {
-                ...freelancer,
-                reviews: reviewsWithDetails,
-                averageRating,
-                assignedClients: uniqueClientDetails
-              };
-            } catch (error) {
-              console.error("Error fetching details:", error);
-              return freelancer;
-            }
-          })
-        );
-
-        setFreelancers(freelancersWithDetails);
+        const response = await adminFreelancerApi.getAllFreelancers({ page: currentPage, limit: itemsPerPage, search: searchQuery });
+        if (!ignore && response.success) {
+          setFreelancers(response.data.freelancers);
+        }
       } catch (error) {
         console.error("Error fetching freelancers:", error);
         toast({
@@ -162,29 +59,19 @@ export default function FreelancersPage() {
           description: "Failed to fetch freelancers. Please try again.",
         });
       } finally {
-        setIsLoading(false);
+        if (!ignore) setIsLoading(false);
       }
     }
-
     fetchFreelancers();
-  }, []);
+    return () => { ignore = true; };
+  }, [currentPage, searchQuery]);
 
   const handleUpdateAvailability = async (freelancerId, newAvailability) => {
     try {
-      await databases.updateDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.freelancerCollectionId,
-        freelancerId,
-        {
-          currently_available: newAvailability,
-          updated_at: new Date().toISOString()
-        }
-      );
-
+      await adminFreelancerApi.updateAvailability(freelancerId, newAvailability);
       setFreelancers(freelancers.map(freelancer =>
         freelancer.$id === freelancerId ? { ...freelancer, currently_available: newAvailability } : freelancer
       ));
-
       toast({
         title: "Success",
         description: `Freelancer ${newAvailability ? 'activated' : 'deactivated'} successfully`,
@@ -200,16 +87,9 @@ export default function FreelancersPage() {
     }
   };
 
-  const filteredFreelancers = freelancers.filter(freelancer =>
-    freelancer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    freelancer.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredFreelancers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentFreelancers = filteredFreelancers.slice(startIndex, endIndex);
+  // Pagination logic (from backend response)
+  const totalPages = Math.max(1, Math.ceil(freelancers.length / itemsPerPage));
+  const currentFreelancers = freelancers;
 
   // Function to generate page numbers array
   const getPageNumbers = (currentPage, totalPages) => {
@@ -297,15 +177,15 @@ export default function FreelancersPage() {
                     <div className="flex items-center gap-2">
                       {freelancer.profile_photo ? (
                         <img 
-                          src={freelancer.profile_photo} 
+                          src={loadImageURI(freelancer.profile_photo)} 
                           alt={freelancer.full_name}
                           className="h-7 w-7 rounded-full object-cover"
                         />
                       ) : (
                         <div className="h-7 w-7 rounded-full bg-purple-100 flex items-center justify-center">
-                          <span className="text-sm font-medium text-purple-600">
-                            {freelancer.full_name?.charAt(0)}
-                          </span>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9.001 9.001 0 0112 15c2.21 0 4.21.805 5.879 2.146M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
                         </div>
                       )}
                       <div className="space-y-0.5">
