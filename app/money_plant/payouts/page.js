@@ -45,6 +45,7 @@ export default function PayoutsPage() {
 	const [selectedRequest, setSelectedRequest] = useState(null);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+	const [processingRequestId, setProcessingRequestId] = useState(null);
 	const [withdrawalRequests, setWithdrawalRequests] = useState([]);
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 8;
@@ -85,19 +86,57 @@ useEffect(() => {
 
 const handleUpdateStatus = async (id, newStatus) => {
 	try {
-		setIsLoading(true);
+		setProcessingRequestId(id);
 		await adminWithdrawalApi.updateWithdrawalStatus(id, newStatus);
-		setWithdrawalRequests(
-			withdrawalRequests.map((request) =>
+		
+		// Update the local state to reflect the change
+		setWithdrawalRequests(prev =>
+			prev.map((request) =>
 				request.id === id ? { ...request, status: newStatus } : request
 			)
 		);
+		
+		// If dialog is open and we're updating the selected request, update it too
+		if (selectedRequest && selectedRequest.id === id) {
+			setSelectedRequest(prev => ({ ...prev, status: newStatus }));
+		}
+		
+		// Show appropriate success message based on status
+		const statusMessages = {
+			APPROVED: "Withdrawal request approved successfully",
+			REJECTED: "Withdrawal request rejected",
+			PROCESSED: "Withdrawal request marked as processed",
+			PENDING: "Withdrawal request status updated"
+		};
+		
 		toast({
 			title: "Success",
-			description: `Withdrawal request ${newStatus}`,
-			variant: "success",
+			description: statusMessages[newStatus] || `Withdrawal request ${newStatus.toLowerCase()}`,
+			variant: "default",
 		});
-		setIsDialogOpen(false);
+		
+		// Close dialog if it was open
+		if (isDialogOpen) {
+			setIsDialogOpen(false);
+		}
+		
+		// Refresh the data to ensure consistency
+		const res = await adminWithdrawalApi.getWithdrawalRequests({
+			page: currentPage,
+			pageSize: itemsPerPage,
+			status: statusFilter,
+			search: searchQuery,
+		});
+		setWithdrawalRequests(res.requests.map((request) => ({
+			id: request.id,
+			freelancer: request.freelancer,
+			freelancerEmail: request.freelancerEmail,
+			amount: request.amount,
+			status: request.status,
+			requestDate: request.requestDate,
+			bankAccount: request.bankAccount,
+		})));
+		
 	} catch (error) {
 		console.error("Error updating status:", error);
 		toast({
@@ -106,7 +145,7 @@ const handleUpdateStatus = async (id, newStatus) => {
 			description: "Failed to update status. Please try again.",
 		});
 	} finally {
-		setIsLoading(false);
+		setProcessingRequestId(null);
 	}
 };
 
@@ -118,6 +157,8 @@ const filteredWithdrawals = withdrawalRequests;
 				return "bg-yellow-100 text-yellow-700";
 			case "approved":
 				return "bg-green-100 text-green-700";
+			case "processed":
+				return "bg-blue-100 text-blue-700";
 			case "rejected":
 				return "bg-red-100 text-red-700";
 			default:
@@ -237,6 +278,12 @@ const filteredWithdrawals = withdrawalRequests;
 													Approved
 												</span>
 											</SelectItem>
+											<SelectItem value="processed">
+												<span className="flex items-center gap-2 text-blue-600">
+													<CheckCircle className="h-3.5 w-3.5" />
+													Processed
+												</span>
+											</SelectItem>
 											<SelectItem value="rejected">
 												<span className="flex items-center gap-2 text-red-600">
 													<XCircle className="h-3.5 w-3.5" />
@@ -292,9 +339,58 @@ const filteredWithdrawals = withdrawalRequests;
 													setSelectedRequest(request);
 													setIsDialogOpen(true);
 												}}
+												title="View Details"
 											>
 												<Eye className="h-4 w-4" />
 											</Button>
+											{request.status.toLowerCase() === "pending" && (
+												<>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+														onClick={() => handleUpdateStatus(request.id, "APPROVED")}
+														disabled={processingRequestId === request.id}
+														title="Approve Request"
+													>
+														{processingRequestId === request.id ? (
+															<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+														) : (
+															<CheckCircle className="h-4 w-4" />
+														)}
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+														onClick={() => handleUpdateStatus(request.id, "REJECTED")}
+														disabled={processingRequestId === request.id}
+														title="Reject Request"
+													>
+														{processingRequestId === request.id ? (
+															<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+														) : (
+															<XCircle className="h-4 w-4" />
+														)}
+													</Button>
+												</>
+											)}
+											{request.status.toLowerCase() === "approved" && (
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+													onClick={() => handleUpdateStatus(request.id, "PROCESSED")}
+													disabled={processingRequestId === request.id}
+													title="Mark as Processed"
+												>
+													{processingRequestId === request.id ? (
+														<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+													) : (
+														<CheckCircle className="h-4 w-4" />
+													)}
+												</Button>
+											)}
 										</div>
 									</td>
 								</tr>
@@ -387,6 +483,14 @@ const filteredWithdrawals = withdrawalRequests;
 									<p className="text-lg font-semibold text-purple-600">
 										${selectedRequest.amount}
 									</p>
+									<p className="text-xs text-gray-500 mt-1">
+										Requested: {new Date(selectedRequest.requestDate).toLocaleDateString()}
+									</p>
+									{selectedRequest.status?.toLowerCase() === "processed" && (
+										<p className="text-xs text-blue-600 mt-1">
+											Processed: {new Date().toLocaleDateString()}
+										</p>
+									)}
 								</div>
 								<div>
 									<p className="text-sm font-medium text-black">Status</p>
@@ -402,28 +506,63 @@ const filteredWithdrawals = withdrawalRequests;
 						</div>
 					)}
 					<DialogFooter className="gap-2 sm:gap-0">
-						{selectedRequest?.status === "pending" && (
+						{selectedRequest?.status?.toLowerCase() === "pending" && (
 							<>
 								<Button
 									variant="destructive"
 									onClick={() =>
-										handleUpdateStatus(selectedRequest.id, "rejected")
+										handleUpdateStatus(selectedRequest.id, "REJECTED")
 									}
-									disabled={isLoading}
+									disabled={processingRequestId === selectedRequest.id}
 								>
-									<XCircle className="h-4 w-4 mr-2" />
+									{processingRequestId === selectedRequest.id ? (
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+									) : (
+										<XCircle className="h-4 w-4 mr-2" />
+									)}
 									Reject
 								</Button>
 								<Button
 									onClick={() =>
-										handleUpdateStatus(selectedRequest.id, "approved")
+										handleUpdateStatus(selectedRequest.id, "APPROVED")
 									}
-									disabled={isLoading}
+									disabled={processingRequestId === selectedRequest.id}
+									className="bg-green-600 hover:bg-green-700"
 								>
-									<CheckCircle className="h-4 w-4 mr-2" />
+									{processingRequestId === selectedRequest.id ? (
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+									) : (
+										<CheckCircle className="h-4 w-4 mr-2" />
+									)}
 									Approve
 								</Button>
 							</>
+						)}
+						{selectedRequest?.status?.toLowerCase() === "approved" && (
+							<Button
+								onClick={() =>
+									handleUpdateStatus(selectedRequest.id, "PROCESSED")
+								}
+								disabled={processingRequestId === selectedRequest.id}
+								className="bg-blue-600 hover:bg-blue-700"
+							>
+								{processingRequestId === selectedRequest.id ? (
+									<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+								) : (
+									<CheckCircle className="h-4 w-4 mr-2" />
+								)}
+								Mark as Processed
+							</Button>
+						)}
+						{selectedRequest?.status?.toLowerCase() === "processed" && (
+							<div className="text-sm text-gray-500 py-2">
+								This withdrawal has been processed and completed.
+							</div>
+						)}
+						{selectedRequest?.status?.toLowerCase() === "rejected" && (
+							<div className="text-sm text-red-500 py-2">
+								This withdrawal request has been rejected.
+							</div>
 						)}
 					</DialogFooter>
 				</DialogContent>
