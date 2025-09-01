@@ -12,7 +12,8 @@ import {
   UserCheck,
   History,
   UserCog,
-  Bell
+  Bell,
+  Briefcase
 } from "lucide-react";
 import {
   Sidebar,
@@ -153,6 +154,17 @@ export function SuperAdminSidebar() {
                 >
                   <HelpCircle className="text-muted-foreground" />
                   <span>FAQs</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/money_plant/services" passHref legacyBehavior>
+                <SidebarMenuButton
+                  tooltip="Services"
+                  isActive={isActive("/money_plant/services")}
+                >
+                  <Briefcase className="text-muted-foreground" />
+                  <span>Services</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
