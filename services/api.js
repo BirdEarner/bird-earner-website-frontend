@@ -394,14 +394,164 @@ export const adminFreelancerApi = {
   },
 };
 
+export const adminServiceApi = {
+  // Get all services with pagination and search
+  getAllServices: async ({ page = 1, limit = 8, search = "", category = "" } = {}) => {
+    try {
+      const params = new URLSearchParams({ page, limit, search, category });
+      const response = await fetch(
+        `${baseUrl}/api/admin/services?${params}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch services");
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  // Create new service
+  createService: async (formData) => {
+    try {
+      // First upload the image if it exists
+      if (formData.get('image')) {
+        const imageFormData = new FormData();
+        imageFormData.append('file', formData.get('image'));
+        imageFormData.append('category', 'service_images');
+        
+        console.log({imageFormData});
+
+        const uploadResponse = await fetch(`${baseUrl}/api/upload?category=service_images`, {
+          method: "POST",
+          headers: {
+            // Authorization: `Bearer ${this.token}`,
+            Accept: "application/json",
+            // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
+          },
+          body: imageFormData
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload image");
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        formData.delete('image');
+        formData.append('imageUrl', uploadResult.data.url);
+      }
+
+      const formDataObj = {};
+      formData.forEach((value, key) => {
+        formDataObj[key] = value;
+      });
+
+
+      const response = await fetch(`${baseUrl}/api/admin/services`, {
+        method: "POST",
+        body: JSON.stringify(formDataObj),
+        headers: {
+          "Content-Type": "application/json"
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create service");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  // Update service
+  updateService: async (serviceId, formData) => {
+    try {
+      // First upload the image if it exists
+      if (formData.get('image')) {
+        const imageFormData = new FormData();
+        imageFormData.append('file', formData.get('image'));
+        imageFormData.append('category', 'service_images');
+
+        console.log({imageFormData});
+        
+
+        const uploadResponse = await fetch(`${baseUrl}/api/upload?category=service_images`, {
+          method: "POST",
+          body: imageFormData,
+          headers: {
+            // Authorization: `Bearer ${this.token}`,
+            Accept: "application/json",
+            // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
+          },
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload image");
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        formData.delete('image');
+        formData.append('imageUrl', uploadResult.data.url);
+      }
+
+      const formDataObj = {};
+
+      formData.forEach((value, key) => {
+        formDataObj[key] = value;
+      });
+
+      const response = await fetch(
+        `${baseUrl}/api/admin/services/${serviceId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(formDataObj),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update service");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  // Delete service
+  deleteService: async (serviceId) => {
+    try {
+      const response = await fetch(
+        `${baseUrl}/api/admin/services/${serviceId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to delete service");
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+};
+
 export const loadImageURI = (uri) => {
+  console.log({uri});
+  
   if (!Boolean(uri)) {
     return null;
   } else if (uri.startsWith("http://") || uri.startsWith("https://")) {
     return uri; // Return remote URL as is
   } else if (uri.startsWith("/")) {
     return `${baseUrl}/api${uri}`; // Convert relative path to absolute URL
-  } else if (uri.startsWith("file://")) {
+  } else if (uri.startsWith("file://") || uri.startsWith("blob:") || uri.startsWith("data:")) {
     // console.warn(
     //   "File is being loaded from local storage, ensure this is intended."
     // );

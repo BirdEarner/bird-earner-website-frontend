@@ -878,7 +878,7 @@ function HomeContent() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
+                {/* <div className="flex items-center gap-4 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-purple-200/50 shadow-sm">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-md">
                     <Phone className="w-6 h-6 text-white" />
                   </div>
@@ -886,7 +886,7 @@ function HomeContent() {
                     <p className="font-semibold text-purple-900">Call Us</p>
                     <p className="text-purple-700/70">+91 84597 23322</p>
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Social Links */}
