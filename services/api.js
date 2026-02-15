@@ -103,7 +103,7 @@ export const adminAuthApi = {
   // Admin login
   login: async (email, password) => {
     try {
-      const response = await fetch(`${baseUrl}/api/admins/login`, {
+      const response = await fetch(`${baseUrl}/api/admin/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +126,7 @@ export const adminAuthApi = {
   // Admin signup
   signup: async (name, email, password, role = "admin") => {
     try {
-      const response = await fetch(`${baseUrl}/api/admins/signup`, {
+      const response = await fetch(`${baseUrl}/api/admin/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -149,7 +149,7 @@ export const adminAuthApi = {
   // Verify token (check if user is authenticated)
   verifyToken: async (token) => {
     try {
-      const response = await fetch(`${baseUrl}/api/admins/verify`, {
+      const response = await fetch(`${baseUrl}/api/admin/verify`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -171,7 +171,7 @@ export const adminAuthApi = {
   // Get all admins (requires superadmin)
   getAllAdmins: async (token) => {
     try {
-      const response = await fetch(`${baseUrl}/api/admins`, {
+      const response = await fetch(`${baseUrl}/api/admin/list`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -194,7 +194,7 @@ export const adminAuthApi = {
   // Delete admin (requires superadmin)
   deleteAdmin: async (token, adminId) => {
     try {
-      const response = await fetch(`${baseUrl}/api/admins/delete/${adminId}`, {
+      const response = await fetch(`${baseUrl}/api/admin/delete/${adminId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -418,8 +418,8 @@ export const adminServiceApi = {
         const imageFormData = new FormData();
         imageFormData.append('file', formData.get('image'));
         imageFormData.append('category', 'service_images');
-        
-        console.log({imageFormData});
+
+        console.log({ imageFormData });
 
         const uploadResponse = await fetch(`${baseUrl}/api/upload?category=service_images`, {
           method: "POST",
@@ -430,11 +430,11 @@ export const adminServiceApi = {
           },
           body: imageFormData
         });
-        
+
         if (!uploadResponse.ok) {
           throw new Error("Failed to upload image");
         }
-        
+
         const uploadResult = await uploadResponse.json();
         formData.delete('image');
         formData.append('imageUrl', uploadResult.data.url);
@@ -453,7 +453,7 @@ export const adminServiceApi = {
           "Content-Type": "application/json"
         },
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create service");
@@ -474,8 +474,8 @@ export const adminServiceApi = {
         imageFormData.append('file', formData.get('image'));
         imageFormData.append('category', 'service_images');
 
-        console.log({imageFormData});
-        
+        console.log({ imageFormData });
+
 
         const uploadResponse = await fetch(`${baseUrl}/api/upload?category=service_images`, {
           method: "POST",
@@ -486,11 +486,11 @@ export const adminServiceApi = {
             // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
           },
         });
-        
+
         if (!uploadResponse.ok) {
           throw new Error("Failed to upload image");
         }
-        
+
         const uploadResult = await uploadResponse.json();
         formData.delete('image');
         formData.append('imageUrl', uploadResult.data.url);
@@ -512,7 +512,7 @@ export const adminServiceApi = {
           }
         }
       );
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to update service");
@@ -543,8 +543,8 @@ export const adminServiceApi = {
 };
 
 export const loadImageURI = (uri) => {
-  console.log({uri});
-  
+  console.log({ uri });
+
   if (!Boolean(uri)) {
     return null;
   } else if (uri.startsWith("http://") || uri.startsWith("https://")) {
