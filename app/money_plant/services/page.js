@@ -8,6 +8,7 @@ import { ServiceCard } from "@/components/services/service-card";
 import { ServiceDialog } from "@/components/services/service-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { adminServiceApi } from '@/services/api';
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -16,12 +17,15 @@ export default function ServicesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const { toast } = useToast();
+  const { getToken } = useAdminAuth();
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const fetchServices = async () => {
     try {
+      const token = getToken();
       const response = await adminServiceApi.getAllServices({
+        token,
         page,
         search: searchQuery
       });
@@ -40,7 +44,7 @@ export default function ServicesPage() {
 
   useEffect(() => {
     fetchServices();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, getToken]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -59,7 +63,8 @@ export default function ServicesPage() {
 
   const handleDelete = async (serviceId) => {
     try {
-      await adminServiceApi.deleteService(serviceId);
+      const token = getToken();
+      await adminServiceApi.deleteService(token, serviceId);
       toast({
         title: "Success",
         description: "Service deleted successfully",
@@ -76,16 +81,17 @@ export default function ServicesPage() {
 
   const handleSave = async (formData) => {
     try {
+      const token = getToken();
       if (editingService) {
-        await adminServiceApi.updateService(editingService.id, formData);
+        await adminServiceApi.updateService(token, editingService.id, formData);
         toast({
           title: "Success",
           description: "Service updated successfully",
         });
       } else {
-        console.log({formData});
-        
-        await adminServiceApi.createService(formData);
+        console.log({ formData });
+
+        await adminServiceApi.createService(token, formData);
         toast({
           title: "Success",
           description: "Service created successfully",

@@ -40,7 +40,8 @@ export default function FAQsPage() {
     question: "",
     answer: "",
     category: "general", // Default category
-    youtube_link: "",
+    keywords: "",
+    youtubeLink: "",
   });
   const [faqs, setFaqs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,20 +70,20 @@ export default function FAQsPage() {
   }, []);
 
   const filteredFaqs = faqs.filter(faq => {
-    const matchesSearch = 
+    const matchesSearch =
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = 
+
+    const matchesCategory =
       selectedCategory === "all" ||
-      (faq.keywords && faq.keywords.toLowerCase() === selectedCategory.toLowerCase());
+      (faq.category && faq.category.toLowerCase() === selectedCategory.toLowerCase());
 
     return matchesSearch && matchesCategory;
   });
 
   // Group FAQs by category
   const groupedFaqs = filteredFaqs.reduce((acc, faq) => {
-    const category = faq.keywords || "general";
+    const category = faq.category || "general";
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -96,8 +97,9 @@ export default function FAQsPage() {
       setFormData({
         question: faq.question,
         answer: faq.answer,
-        category: faq.keywords || "general",
-        youtube_link: faq.youtube_link || "",
+        category: faq.category || "general",
+        keywords: faq.keywords || "",
+        youtubeLink: faq.youtubeLink || "",
       });
     } else {
       setEditingFaq(null);
@@ -105,7 +107,8 @@ export default function FAQsPage() {
         question: "",
         answer: "",
         category: "general",
-        youtube_link: "",
+        keywords: "",
+        youtubeLink: "",
       });
     }
     setIsDialogOpen(true);
@@ -118,7 +121,8 @@ export default function FAQsPage() {
       question: "",
       answer: "",
       category: "general",
-      youtube_link: "",
+      keywords: "",
+      youtubeLink: "",
     });
   };
 
@@ -126,8 +130,11 @@ export default function FAQsPage() {
     try {
       setIsLoading(true);
       const faqDataToSubmit = {
-        ...formData,
-        keywords: formData.category, // Use category as keywords
+        question: formData.question,
+        answer: formData.answer,
+        category: formData.category,
+        keywords: formData.keywords,
+        youtubeLink: formData.youtubeLink,
       };
 
       if (editingFaq) {
@@ -311,26 +318,33 @@ export default function FAQsPage() {
                             {faq.answer}
                           </p>
                         </div>
-                        {faq.youtube_link && (
+                        <div className="flex gap-2 flex-wrap">
+                          {faq.keywords && faq.keywords.split(',').map((keyword, index) => (
+                            <span key={index} className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 text-xs font-medium">
+                              {keyword.trim()}
+                            </span>
+                          ))}
+                        </div>
+                        {faq.youtubeLink && (
                           <button
-                            onClick={() => handleVideoClick(faq.youtube_link)}
+                            onClick={() => handleVideoClick(faq.youtubeLink)}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500/10 to-red-600/10 hover:from-red-500/20 hover:to-red-600/20 text-red-600 transition-all duration-300 group/btn"
                           >
                             <Youtube className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
                             <span className="font-medium">Watch Video Tutorial</span>
                             <div className="h-5 w-5 rounded-full bg-red-100 group-hover/btn:bg-red-200 flex items-center justify-center transition-colors">
-                              <svg 
-                                width="12" 
-                                height="12" 
-                                viewBox="0 0 24 24" 
-                                fill="none" 
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
                                 className="transition-transform group-hover/btn:translate-x-0.5"
                               >
-                                <path 
-                                  d="M5 12h14M12 5l7 7-7 7" 
-                                  stroke="currentColor" 
-                                  strokeWidth="2" 
-                                  strokeLinecap="round" 
+                                <path
+                                  d="M5 12h14M12 5l7 7-7 7"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
                               </svg>
@@ -423,11 +437,23 @@ export default function FAQsPage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium text-purple-900">Keywords (comma separated)</label>
+              <Input
+                value={formData.keywords}
+                onChange={(e) =>
+                  setFormData({ ...formData, keywords: e.target.value })
+                }
+                placeholder="e.g. payment, withdrawal, birds"
+                disabled={isLoading}
+                className="focus-visible:ring-purple-500"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium text-purple-900">YouTube Tutorial Link</label>
               <Input
-                value={formData.youtube_link}
+                value={formData.youtubeLink}
                 onChange={(e) =>
-                  setFormData({ ...formData, youtube_link: e.target.value })
+                  setFormData({ ...formData, youtubeLink: e.target.value })
                 }
                 placeholder="Enter YouTube video URL (optional)"
                 disabled={isLoading}
@@ -436,9 +462,9 @@ export default function FAQsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={handleCloseDialog} 
+            <Button
+              variant="outline"
+              onClick={handleCloseDialog}
               disabled={isLoading}
               className="border-purple-200 hover:bg-purple-50"
             >

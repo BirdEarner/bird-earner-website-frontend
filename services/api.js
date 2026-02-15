@@ -1,7 +1,8 @@
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5050";
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export const adminWithdrawalApi = {
   getWithdrawalRequests: async ({
+    token,
     page = 1,
     pageSize = 8,
     status = "all",
@@ -10,15 +11,22 @@ export const adminWithdrawalApi = {
     const url = `${baseUrl}/api/admin/withdrawal-requests?page=${page}&pageSize=${pageSize}&status=${status}&search=${encodeURIComponent(
       search
     )}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
     if (!response.ok) throw new Error("Failed to fetch withdrawal requests");
     return await response.json();
   },
-  updateWithdrawalStatus: async (id, status) => {
+  updateWithdrawalStatus: async (token, id, status) => {
     const url = `${baseUrl}/api/admin/withdrawal-requests/${id}`;
     const response = await fetch(url, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ status }),
     });
     if (!response.ok) throw new Error("Failed to update withdrawal status");
@@ -27,9 +35,13 @@ export const adminWithdrawalApi = {
 };
 
 export const adminPaymentApi = {
-  getPaymentHistory: async ({ page = 1, pageSize = 8, search = "" }) => {
+  getPaymentHistory: async ({ token, page = 1, pageSize = 8, search = "" }) => {
     const url = `${baseUrl}/api/admin/payment-history?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
     if (!response.ok) throw new Error('Failed to fetch payment history');
     return await response.json();
   },
@@ -247,9 +259,13 @@ export const contactApi = {
   },
 
   // Get all contact submissions (admin only)
-  getAllContacts: async () => {
+  getAllContacts: async (token) => {
     try {
-      const response = await fetch(`${baseUrl}/api/contact`);
+      const response = await fetch(`${baseUrl}/api/admin/contacts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       if (!response.ok) throw new Error("Failed to fetch contacts");
       return await response.json();
     } catch (error) {
@@ -259,10 +275,13 @@ export const contactApi = {
   },
 
   // Mark contact as read (admin only)
-  markAsRead: async (id) => {
+  markAsRead: async (token, id) => {
     try {
-      const response = await fetch(`${baseUrl}/api/contact/${id}/read`, {
+      const response = await fetch(`${baseUrl}/api/admin/contacts/${id}/read`, {
         method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
       if (!response.ok) throw new Error("Failed to mark contact as read");
       return await response.json();
@@ -273,10 +292,13 @@ export const contactApi = {
   },
 
   // Delete contact submission (admin only)
-  deleteContact: async (id) => {
+  deleteContact: async (token, id) => {
     try {
-      const response = await fetch(`${baseUrl}/api/contact/${id}`, {
+      const response = await fetch(`${baseUrl}/api/admin/contacts/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
       });
       if (!response.ok) throw new Error("Failed to delete contact");
       return await response.json();
@@ -290,7 +312,7 @@ export const contactApi = {
 // Admin Client Management API
 export const adminClientApi = {
   // Get all clients with enhanced details for admin panel
-  getAllClients: async (page = 1, limit = 8, search = "") => {
+  getAllClients: async (token, page = 1, limit = 8, search = "") => {
     try {
       const queryParams = new URLSearchParams({
         page: page.toString(),
@@ -299,7 +321,12 @@ export const adminClientApi = {
       });
 
       const response = await fetch(
-        `${baseUrl}/api/admin/clients?${queryParams}`
+        `${baseUrl}/api/admin/clients?${queryParams}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
       );
       if (!response.ok) throw new Error("Failed to fetch clients");
       return await response.json();
@@ -310,13 +337,14 @@ export const adminClientApi = {
   },
 
   // Update client availability status
-  updateClientAvailability: async (clientId, currently_available) => {
+  updateClientAvailability: async (token, clientId, currently_available) => {
     try {
       const response = await fetch(
         `${baseUrl}/api/admin/clients/${clientId}/availability`,
         {
           method: "PATCH",
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ currently_available }),
@@ -359,11 +387,16 @@ export const adminClientApi = {
 
 export const adminFreelancerApi = {
   // Get all freelancers (admin panel)
-  getAllFreelancers: async ({ page = 1, limit = 8, search = "" } = {}) => {
+  getAllFreelancers: async ({ token, page = 1, limit = 8, search = "" } = {}) => {
     try {
       const params = new URLSearchParams({ page, limit, search });
       const response = await fetch(
-        `${baseUrl}/api/admin/freelancers?${params}`
+        `${baseUrl}/api/admin/freelancers?${params}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
       );
       if (!response.ok) throw new Error("Failed to fetch freelancers");
       return await response.json();
@@ -374,13 +407,16 @@ export const adminFreelancerApi = {
   },
 
   // Update freelancer availability
-  updateAvailability: async (freelancerId, currently_available) => {
+  updateAvailability: async (token, freelancerId, currently_available) => {
     try {
       const response = await fetch(
         `${baseUrl}/api/admin/freelancers/${freelancerId}/availability`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ currently_available }),
         }
       );
@@ -396,11 +432,16 @@ export const adminFreelancerApi = {
 
 export const adminServiceApi = {
   // Get all services with pagination and search
-  getAllServices: async ({ page = 1, limit = 8, search = "", category = "" } = {}) => {
+  getAllServices: async ({ token, page = 1, limit = 8, search = "", category = "" } = {}) => {
     try {
       const params = new URLSearchParams({ page, limit, search, category });
       const response = await fetch(
-        `${baseUrl}/api/admin/services?${params}`
+        `${baseUrl}/api/admin/services?${params}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
       );
       if (!response.ok) throw new Error("Failed to fetch services");
       return await response.json();

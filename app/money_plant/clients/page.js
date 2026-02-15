@@ -27,12 +27,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { adminClientApi, loadImageURI } from "@/services/api";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 
 export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { getToken } = useAdminAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [selectedClient, setSelectedClient] = useState(null);
@@ -59,7 +61,8 @@ export default function ClientsPage() {
     async function fetchClients() {
       try {
         setIsLoading(true);
-        const response = await adminClientApi.getAllClients(currentPage, itemsPerPage, debouncedSearchQuery);
+        const token = getToken();
+        const response = await adminClientApi.getAllClients(token, currentPage, itemsPerPage, debouncedSearchQuery);
 
         if (response.success) {
           setClients(response.data.clients);
@@ -85,11 +88,12 @@ export default function ClientsPage() {
     }
 
     fetchClients();
-  }, [currentPage, debouncedSearchQuery]);
+  }, [currentPage, debouncedSearchQuery, getToken]);
 
   const handleUpdateAvailability = async (clientId, newAvailability) => {
     try {
-      const response = await adminClientApi.updateClientAvailability(clientId, newAvailability);
+      const token = getToken();
+      const response = await adminClientApi.updateClientAvailability(token, clientId, newAvailability);
 
       if (response.success) {
         setClients(clients.map(client =>
@@ -201,8 +205,8 @@ export default function ClientsPage() {
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-3">
                       {client.profile_photo ? (
-                        <img 
-                          src={loadImageURI(client.profile_photo)} 
+                        <img
+                          src={loadImageURI(client.profile_photo)}
                           alt={client.full_name}
                           className="h-8 w-8 rounded-full object-cover"
                         />
@@ -259,11 +263,10 @@ export default function ClientsPage() {
                   </td>
                   <td className="px-3 py-2 text-sm">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        client.currently_available
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${client.currently_available
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                        }`}
                     >
                       {client.currently_available ? "Active" : "Inactive"}
                     </span>
@@ -280,7 +283,7 @@ export default function ClientsPage() {
                           <Mail className="h-4 w-4" />
                           <span>Contact</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="flex items-center gap-2"
                           onClick={() => handleUpdateAvailability(client.$id, !client.currently_available)}
                         >
@@ -317,7 +320,7 @@ export default function ClientsPage() {
                   className={`cursor-pointer ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
                 />
               </PaginationItem>
-              
+
               {getPageNumbers(currentPage, totalPages).map((page, index) => (
                 <PaginationItem key={index}>
                   {page === '...' ? (
@@ -369,11 +372,10 @@ export default function ClientsPage() {
                   <div className="flex-1 space-y-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-black">{freelancer.name}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        freelancer.status === 'Assigned' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${freelancer.status === 'Assigned'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                        }`}>
                         {freelancer.status}
                       </span>
                     </div>

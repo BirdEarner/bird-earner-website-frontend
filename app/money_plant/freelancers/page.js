@@ -17,9 +17,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { databases, appwriteConfig } from "@/hooks/appwrite_config";
-import { Query } from "appwrite";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 import {
   Pagination,
   PaginationContent,
@@ -40,6 +39,7 @@ export default function FreelancersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const { toast } = useToast();
+  const { getToken } = useAdminAuth();
   const [isAssignmentsOpen, setIsAssignmentsOpen] = useState(false);
 
   useEffect(() => {
@@ -47,7 +47,8 @@ export default function FreelancersPage() {
     async function fetchFreelancers() {
       try {
         setIsLoading(true);
-        const response = await adminFreelancerApi.getAllFreelancers({ page: currentPage, limit: itemsPerPage, search: searchQuery });
+        const token = getToken();
+        const response = await adminFreelancerApi.getAllFreelancers({ token, page: currentPage, limit: itemsPerPage, search: searchQuery });
         if (!ignore && response.success) {
           setFreelancers(response.data.freelancers);
         }
@@ -64,11 +65,12 @@ export default function FreelancersPage() {
     }
     fetchFreelancers();
     return () => { ignore = true; };
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, getToken]);
 
   const handleUpdateAvailability = async (freelancerId, newAvailability) => {
     try {
-      await adminFreelancerApi.updateAvailability(freelancerId, newAvailability);
+      const token = getToken();
+      await adminFreelancerApi.updateAvailability(token, freelancerId, newAvailability);
       setFreelancers(freelancers.map(freelancer =>
         freelancer.$id === freelancerId ? { ...freelancer, currently_available: newAvailability } : freelancer
       ));
@@ -176,8 +178,8 @@ export default function FreelancersPage() {
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       {freelancer.profile_photo ? (
-                        <img 
-                          src={loadImageURI(freelancer.profile_photo)} 
+                        <img
+                          src={loadImageURI(freelancer.profile_photo)}
                           alt={freelancer.full_name}
                           className="h-7 w-7 rounded-full object-cover"
                         />
@@ -273,8 +275,8 @@ export default function FreelancersPage() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500">
-                          Acc: {freelancer.accountNumber ? 
-                            `${freelancer.accountNumber.toString().slice(0, -4)}****` : 
+                          Acc: {freelancer.accountNumber ?
+                            `${freelancer.accountNumber.toString().slice(0, -4)}****` :
                             "Not provided"}
                         </p>
                         <p className="text-xs text-gray-500">
@@ -309,11 +311,10 @@ export default function FreelancersPage() {
                   </td>
                   <td className="px-3 py-2 text-sm">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        freelancer.currently_available
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${freelancer.currently_available
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
-                      }`}
+                        }`}
                     >
                       {freelancer.currently_available ? "Active" : "Inactive"}
                     </span>
@@ -334,7 +335,7 @@ export default function FreelancersPage() {
                           <DollarSign className="h-4 w-4" />
                           <span>View Payouts</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           className="flex items-center gap-2"
                           onClick={() => handleUpdateAvailability(freelancer.$id, !freelancer.currently_available)}
                         >
@@ -371,7 +372,7 @@ export default function FreelancersPage() {
                   className={`cursor-pointer ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
                 />
               </PaginationItem>
-              
+
               {getPageNumbers(currentPage, totalPages).map((page, index) => (
                 <PaginationItem key={index}>
                   {page === '...' ? (
@@ -418,8 +419,8 @@ export default function FreelancersPage() {
               <p className="text-center text-gray-500 py-4">No reviews yet</p>
             ) : (
               selectedFreelancer?.reviews?.map((review) => (
-                <div 
-                  key={`${review.$id}-${review.giverId}`} 
+                <div
+                  key={`${review.$id}-${review.giverId}`}
                   className="border border-purple-100 rounded-lg p-4 space-y-2"
                 >
                   <div className="flex items-center justify-between">

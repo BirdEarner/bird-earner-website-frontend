@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { adminWithdrawalApi } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 import {
 	Select,
 	SelectContent,
@@ -50,12 +51,83 @@ export default function PayoutsPage() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 8;
 	const { toast } = useToast();
+	const { getToken } = useAdminAuth();
 
-useEffect(() => {
-	async function fetchData() {
+	useEffect(() => {
+		async function fetchData() {
+			try {
+				setIsLoading(true);
+				const token = getToken();
+				const res = await adminWithdrawalApi.getWithdrawalRequests({
+					token,
+					page: currentPage,
+					pageSize: itemsPerPage,
+					status: statusFilter,
+					search: searchQuery,
+				});
+				setWithdrawalRequests(res.requests.map((request) => ({
+					id: request.id,
+					freelancer: request.freelancer,
+					freelancerEmail: request.freelancerEmail,
+					amount: request.amount,
+					status: request.status,
+					requestDate: request.requestDate,
+					bankAccount: request.bankAccount,
+				})));
+			} catch (error) {
+				console.error("Error fetching data:", error);
+				toast({
+					variant: "destructive",
+					title: "Error",
+					description: "Failed to fetch withdrawal requests. Please try again.",
+				});
+			} finally {
+				setIsLoading(false);
+			}
+		}
+		fetchData();
+	}, [currentPage, statusFilter, searchQuery, getToken]);
+
+	const handleUpdateStatus = async (id, newStatus) => {
 		try {
-			setIsLoading(true);
+			setProcessingRequestId(id);
+			const token = getToken();
+			await adminWithdrawalApi.updateWithdrawalStatus(token, id, newStatus);
+
+			// Update the local state to reflect the change
+			setWithdrawalRequests(prev =>
+				prev.map((request) =>
+					request.id === id ? { ...request, status: newStatus } : request
+				)
+			);
+
+			// If dialog is open and we're updating the selected request, update it too
+			if (selectedRequest && selectedRequest.id === id) {
+				setSelectedRequest(prev => ({ ...prev, status: newStatus }));
+			}
+
+			// Show appropriate success message based on status
+			const statusMessages = {
+				APPROVED: "Withdrawal request approved successfully",
+				REJECTED: "Withdrawal request rejected",
+				PROCESSED: "Withdrawal request marked as processed",
+				PENDING: "Withdrawal request status updated"
+			};
+
+			toast({
+				title: "Success",
+				description: statusMessages[newStatus] || `Withdrawal request ${newStatus.toLowerCase()}`,
+				variant: "default",
+			});
+
+			// Close dialog if it was open
+			if (isDialogOpen) {
+				setIsDialogOpen(false);
+			}
+
+			// Refresh the data to ensure consistency
 			const res = await adminWithdrawalApi.getWithdrawalRequests({
+				token,
 				page: currentPage,
 				pageSize: itemsPerPage,
 				status: statusFilter,
@@ -70,86 +142,20 @@ useEffect(() => {
 				requestDate: request.requestDate,
 				bankAccount: request.bankAccount,
 			})));
+
 		} catch (error) {
-			console.error("Error fetching data:", error);
+			console.error("Error updating status:", error);
 			toast({
 				variant: "destructive",
 				title: "Error",
-				description: "Failed to fetch withdrawal requests. Please try again.",
+				description: "Failed to update status. Please try again.",
 			});
 		} finally {
-			setIsLoading(false);
+			setProcessingRequestId(null);
 		}
-	}
-	fetchData();
-}, [currentPage, statusFilter, searchQuery]);
+	};
 
-const handleUpdateStatus = async (id, newStatus) => {
-	try {
-		setProcessingRequestId(id);
-		await adminWithdrawalApi.updateWithdrawalStatus(id, newStatus);
-		
-		// Update the local state to reflect the change
-		setWithdrawalRequests(prev =>
-			prev.map((request) =>
-				request.id === id ? { ...request, status: newStatus } : request
-			)
-		);
-		
-		// If dialog is open and we're updating the selected request, update it too
-		if (selectedRequest && selectedRequest.id === id) {
-			setSelectedRequest(prev => ({ ...prev, status: newStatus }));
-		}
-		
-		// Show appropriate success message based on status
-		const statusMessages = {
-			APPROVED: "Withdrawal request approved successfully",
-			REJECTED: "Withdrawal request rejected",
-			PROCESSED: "Withdrawal request marked as processed",
-			PENDING: "Withdrawal request status updated"
-		};
-		
-		toast({
-			title: "Success",
-			description: statusMessages[newStatus] || `Withdrawal request ${newStatus.toLowerCase()}`,
-			variant: "default",
-		});
-		
-		// Close dialog if it was open
-		if (isDialogOpen) {
-			setIsDialogOpen(false);
-		}
-		
-		// Refresh the data to ensure consistency
-		const res = await adminWithdrawalApi.getWithdrawalRequests({
-			page: currentPage,
-			pageSize: itemsPerPage,
-			status: statusFilter,
-			search: searchQuery,
-		});
-		setWithdrawalRequests(res.requests.map((request) => ({
-			id: request.id,
-			freelancer: request.freelancer,
-			freelancerEmail: request.freelancerEmail,
-			amount: request.amount,
-			status: request.status,
-			requestDate: request.requestDate,
-			bankAccount: request.bankAccount,
-		})));
-		
-	} catch (error) {
-		console.error("Error updating status:", error);
-		toast({
-			variant: "destructive",
-			title: "Error",
-			description: "Failed to update status. Please try again.",
-		});
-	} finally {
-		setProcessingRequestId(null);
-	}
-};
-
-const filteredWithdrawals = withdrawalRequests;
+	const filteredWithdrawals = withdrawalRequests;
 
 	const getStatusColor = (status) => {
 		switch (status.toLowerCase()) {
@@ -411,7 +417,7 @@ const filteredWithdrawals = withdrawalRequests;
 									className={`cursor-pointer ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
 								/>
 							</PaginationItem>
-							
+
 							{getPageNumbers(currentPage, totalPages).map((page, index) => (
 								<PaginationItem key={index}>
 									{page === '...' ? (
@@ -464,13 +470,13 @@ const filteredWithdrawals = withdrawalRequests;
 									<div>
 										<p className="font-medium text-black">Bank Details</p>
 										<div className="text-sm text-gray-500 space-y-1">
-<p>Bank: {selectedRequest.bankAccount?.bankName || "-"}</p>
-<p>
-	Account Holder: {selectedRequest.bankAccount?.accountHolderName || "-"}
-</p>
-<p>
-	Account Number: {selectedRequest.bankAccount?.accountNumber || "-"}
-</p>
+											<p>Bank: {selectedRequest.bankAccount?.bankName || "-"}</p>
+											<p>
+												Account Holder: {selectedRequest.bankAccount?.accountHolderName || "-"}
+											</p>
+											<p>
+												Account Number: {selectedRequest.bankAccount?.accountNumber || "-"}
+											</p>
 										</div>
 									</div>
 								</div>

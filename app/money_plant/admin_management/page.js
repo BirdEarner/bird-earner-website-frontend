@@ -49,17 +49,17 @@ export default function AdminManagementPage() {
       const token = getToken();
       console.log('Fetching admins with token:', token); // Debug log
       const adminsList = await adminAuthApi.getAllAdmins(token);
-      
+
       // Transform the data to match the expected format
       const transformedAdmins = adminsList.map(admin => ({
         id: admin.id,
         fullName: admin.name,
         email: admin.email,
         role: admin.role === 'superadmin' ? 'Super Admin' : 'Admin',
-        lastActive: admin.updated_at || admin.created_at,
+        lastActive: admin.lastLoginAt || admin.updatedAt || admin.createdAt,
         status: 'active', // For now, assume all are active since we don't have this field in DB
       }));
-      
+
       setAdmins(transformedAdmins);
     } catch (error) {
       console.error('Error fetching admins:', error);
@@ -68,7 +68,7 @@ export default function AdminManagementPage() {
         title: "Error",
         description: "Failed to fetch admin list. Using fallback data.",
       });
-      
+
       // Fallback: show current admin at least
       if (currentAdmin) {
         setAdmins([{
@@ -123,7 +123,7 @@ export default function AdminManagementPage() {
         confirmPassword: "",
       });
       setIsDialogOpen(false);
-      
+
       // Refresh the admin list
       await fetchAdmins();
 
@@ -142,7 +142,7 @@ export default function AdminManagementPage() {
     try {
       setIsLoading(true);
       const token = getToken();
-      
+
       await adminAuthApi.deleteAdmin(token, adminId);
 
       toast({
@@ -256,65 +256,64 @@ export default function AdminManagementPage() {
                 </tr>
               ) : (
                 currentItems.map((admin) => (
-                <tr
-                  key={admin.id}
-                  className="border-b border-purple-100 last:border-0"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                        <User className="h-4 w-4 text-purple-600" />
+                  <tr
+                    key={admin.id}
+                    className="border-b border-purple-100 last:border-0"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                          <User className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-black">
+                            {admin.fullName}
+                          </p>
+                          <p className="text-xs text-gray-500">{admin.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-black">
-                          {admin.fullName}
-                        </p>
-                        <p className="text-xs text-gray-500">{admin.email}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm text-black">{admin.role}</span>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm text-black">{admin.role}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-black">
-                    {new Date(admin.lastActive).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        admin.status === "active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {admin.status === "active" ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {admin.role !== "Super Admin" && admin.id !== currentAdmin?.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" disabled={isLoading}>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem
-                            className="flex items-center gap-2 text-red-600"
-                            onClick={() => handleDeleteAdmin(admin.id)}
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span>Delete Admin</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-black">
+                      {new Date(admin.lastActive).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${admin.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                          }`}
+                      >
+                        {admin.status === "active" ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {admin.role !== "Super Admin" && admin.id !== currentAdmin?.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" disabled={isLoading}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-red-600"
+                              onClick={() => handleDeleteAdmin(admin.id)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span>Delete Admin</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -342,8 +341,8 @@ export default function AdminManagementPage() {
                 variant={currentPage === number ? "default" : "outline"}
                 size="sm"
                 onClick={() => paginate(number)}
-                className={currentPage === number 
-                  ? "bg-purple-600 hover:bg-purple-700" 
+                className={currentPage === number
+                  ? "bg-purple-600 hover:bg-purple-700"
                   : "border-purple-200 hover:bg-purple-100"}
               >
                 {number}

@@ -5,6 +5,7 @@ import { Search, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { adminPaymentApi } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useAdminAuth } from "@/hooks/AdminAuthContext";
 import {
   Pagination,
   PaginationContent,
@@ -22,12 +23,15 @@ export default function PaymentHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const { toast } = useToast();
+  const { getToken } = useAdminAuth();
 
   useEffect(() => {
     async function fetchPaymentHistory() {
       try {
         setIsLoading(true);
+        const token = getToken();
         const res = await adminPaymentApi.getPaymentHistory({
+          token,
           page: currentPage,
           pageSize: itemsPerPage,
           search: searchQuery,
@@ -56,7 +60,7 @@ export default function PaymentHistoryPage() {
     }
 
     fetchPaymentHistory();
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, getToken]);
 
   const filteredPayments = paymentHistory;
 
@@ -225,7 +229,7 @@ export default function PaymentHistoryPage() {
                   className={`cursor-pointer ${currentPage === 1 ? 'pointer-events-none opacity-50' : ''}`}
                 />
               </PaginationItem>
-              
+
               {getPageNumbers(currentPage, totalPages).map((page, index) => (
                 <PaginationItem key={index}>
                   {page === '...' ? (

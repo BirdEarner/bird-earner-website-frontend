@@ -13,7 +13,8 @@ import {
   History,
   UserCog,
   Bell,
-  Briefcase
+  Briefcase,
+  MessageSquare
 } from "lucide-react";
 import {
   Sidebar,
@@ -176,6 +177,17 @@ export function SuperAdminSidebar() {
                 >
                   <Bell className="text-muted-foreground" />
                   <span>Notification Management</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/money_plant/contact_submissions" passHref legacyBehavior>
+                <SidebarMenuButton
+                  tooltip="Contact Submissions"
+                  isActive={isActive("/money_plant/contact_submissions")}
+                >
+                  <MessageSquare className="text-muted-foreground" />
+                  <span>Contact Submissions</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

@@ -52,20 +52,20 @@ function FAQContent() {
   }, []);
 
   const filteredFaqs = faqs.filter(faq => {
-    const matchesSearch = 
+    const matchesSearch =
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
       faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = 
+
+    const matchesCategory =
       selectedCategory === "all" ||
-      (faq.keywords && faq.keywords.toLowerCase() === selectedCategory.toLowerCase());
+      (faq.category && faq.category.toLowerCase() === selectedCategory.toLowerCase());
 
     return matchesSearch && matchesCategory;
   });
 
   // Group FAQs by category
   const groupedFaqs = filteredFaqs.reduce((acc, faq) => {
-    const category = faq.keywords || "general";
+    const category = faq.category || "general";
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -128,11 +128,10 @@ function FAQContent() {
           <div className="inline-flex items-center gap-2 p-1.5 bg-purple-100/50 rounded-xl border border-purple-200 shadow-sm">
             <button
               onClick={() => setSelectedCategory("all")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                selectedCategory === "all"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedCategory === "all"
                   ? "bg-white text-purple-700 shadow-sm"
                   : "text-purple-600 hover:text-purple-700 hover:bg-white/50"
-              }`}
+                }`}
             >
               All FAQs
             </button>
@@ -140,11 +139,10 @@ function FAQContent() {
               <button
                 key={category.value}
                 onClick={() => setSelectedCategory(category.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === category.value
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedCategory === category.value
                     ? "bg-white text-purple-700 shadow-sm"
                     : "text-purple-600 hover:text-purple-700 hover:bg-white/50"
-                }`}
+                  }`}
               >
                 {category.label}
               </button>
@@ -167,8 +165,8 @@ function FAQContent() {
               {searchQuery ? "No results found" : "No FAQs available"}
             </h3>
             <p className="text-lg text-purple-600">
-              {searchQuery 
-                ? "Try adjusting your search terms or browse all categories" 
+              {searchQuery
+                ? "Try adjusting your search terms or browse all categories"
                 : "Please check back later for updates"}
             </p>
           </div>
