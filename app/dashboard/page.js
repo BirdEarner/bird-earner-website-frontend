@@ -62,7 +62,7 @@ function FreelancerDashboard({ user, role, userData }) {
             responseTime: '1hr',
             level: profile.level || 1,
             flags: profile.flags || [],
-            xp: profile.XP || 0
+            xp: profile.xp || 0
           });
 
           // Set earnings from profile data
@@ -392,7 +392,7 @@ function ClientDashboard({ user, role, userData }) {
           setStats(prev => ({
             ...prev,
             level: profile.level || 1,
-            xp: profile.XP || 0,
+            xp: profile.xp || 0,
             rating: profile.rating || 0,
             wallet: profile.wallet || 0
           }));
