@@ -92,7 +92,7 @@ export function SuperAdminSidebar() {
           <SidebarMenu>
             {admin?.role !== 'admin' && (
               <SidebarMenuItem>
-                <Link href="/money_plant/admin_management" passHref legacyBehavior>
+                <Link href="/money_plant/admin_management">
                   <SidebarMenuButton
                     tooltip="Admin Management"
                     isActive={isActive("/money_plant/admin_management")}
@@ -104,7 +104,7 @@ export function SuperAdminSidebar() {
               </SidebarMenuItem>
             )}
             <SidebarMenuItem>
-              <Link href="/money_plant/clients" passHref legacyBehavior>
+              <Link href="/money_plant/clients">
                 <SidebarMenuButton
                   tooltip="Clients"
                   isActive={isActive("/money_plant/clients")}
@@ -115,7 +115,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/freelancers" passHref legacyBehavior>
+              <Link href="/money_plant/freelancers">
                 <SidebarMenuButton
                   tooltip="Freelancers"
                   isActive={isActive("/money_plant/freelancers")}
@@ -126,7 +126,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/payouts" passHref legacyBehavior>
+              <Link href="/money_plant/payouts">
                 <SidebarMenuButton
                   tooltip="Payout Requests"
                   isActive={isActive("/money_plant/payouts")}
@@ -137,7 +137,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/payment_history" passHref legacyBehavior>
+              <Link href="/money_plant/payment_history">
                 <SidebarMenuButton
                   tooltip="Payment History"
                   isActive={isActive("/money_plant/payment_history")}
@@ -148,7 +148,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/faqs" passHref legacyBehavior>
+              <Link href="/money_plant/faqs">
                 <SidebarMenuButton
                   tooltip="FAQs"
                   isActive={isActive("/money_plant/faqs")}
@@ -159,7 +159,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/services" passHref legacyBehavior>
+              <Link href="/money_plant/services">
                 <SidebarMenuButton
                   tooltip="Services"
                   isActive={isActive("/money_plant/services")}
@@ -170,7 +170,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/notification_management" passHref legacyBehavior>
+              <Link href="/money_plant/notification_management">
                 <SidebarMenuButton
                   tooltip="Notification Management"
                   isActive={isActive("/money_plant/notification_management")}
@@ -181,7 +181,7 @@ export function SuperAdminSidebar() {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/money_plant/contact_submissions" passHref legacyBehavior>
+              <Link href="/money_plant/contact_submissions">
                 <SidebarMenuButton
                   tooltip="Contact Submissions"
                   isActive={isActive("/money_plant/contact_submissions")}
@@ -200,7 +200,7 @@ export function SuperAdminSidebar() {
           <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/money_plant/settings" passHref legacyBehavior>
+              <Link href="/money_plant/settings">
                 <SidebarMenuButton
                   tooltip="Settings"
                   isActive={isActive("/money_plant/settings")}
