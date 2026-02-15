@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { BirdFeeConfig } from "./bird-fee-config";
 import { ServicePriorityConfig } from "./service-priority-config";
 import { loadImageURI } from "@/services/api";
 
@@ -26,13 +27,14 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
     description: "",
     image: null,
     priorityConfig: {
-      immediate: 172800,    // 2 days in seconds
-      high: 345600,         // 4 days in seconds
-      standard: 999999999   // > 4 days
+      immediate: 172800,
+      high: 345600,
+      standard: 999999999
     },
     birdFee: {
-      base: 0,
-      percentage: 0
+      minimumBudget: 0,
+      maximumBudget: 0,
+      feeStructure: []
     }
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -49,8 +51,9 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
           standard: 999999999
         },
         birdFee: service.birdFee || {
-          base: 0,
-          percentage: 0
+          minimumBudget: 0,
+          maximumBudget: 0,
+          feeStructure: []
         }
       });
       setImagePreview(service.imageUrl || null);
@@ -66,8 +69,9 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
           standard: 999999999
         },
         birdFee: {
-          base: 0,
-          percentage: 0
+          minimumBudget: 0,
+          maximumBudget: 0,
+          feeStructure: []
         }
       });
       setImagePreview(null);
@@ -104,14 +108,10 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
     }));
   };
 
-  const handleBirdFeeChange = (e) => {
-    const { name, value } = e.target;
+  const handleBirdFeeChange = (config) => {
     setFormData((prev) => ({
       ...prev,
-      birdFee: {
-        ...prev.birdFee,
-        [name]: parseFloat(value) || 0,
-      },
+      birdFee: config,
     }));
   };
 
@@ -205,33 +205,10 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
             onChange={handlePriorityConfigChange}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="baseFee">Base Fee</Label>
-              <Input
-                id="baseFee"
-                name="base"
-                type="number"
-                value={formData.birdFee.base}
-                onChange={handleBirdFeeChange}
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="percentageFee">Percentage Fee</Label>
-              <Input
-                id="percentageFee"
-                name="percentage"
-                type="number"
-                value={formData.birdFee.percentage}
-                onChange={handleBirdFeeChange}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-          </div>
+          <BirdFeeConfig
+            config={formData.birdFee}
+            onChange={handleBirdFeeChange}
+          />
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>

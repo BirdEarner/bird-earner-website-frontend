@@ -452,7 +452,7 @@ export const adminServiceApi = {
   },
 
   // Create new service
-  createService: async (formData) => {
+  createService: async (token, formData) => {
     try {
       // First upload the image if it exists
       if (formData.get('image')) {
@@ -465,7 +465,7 @@ export const adminServiceApi = {
         const uploadResponse = await fetch(`${baseUrl}/api/upload?category=service_images`, {
           method: "POST",
           headers: {
-            // Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${token}`,
             Accept: "application/json",
             // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
           },
@@ -491,6 +491,7 @@ export const adminServiceApi = {
         method: "POST",
         body: JSON.stringify(formDataObj),
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
       });
@@ -507,7 +508,7 @@ export const adminServiceApi = {
   },
 
   // Update service
-  updateService: async (serviceId, formData) => {
+  updateService: async (token, serviceId, formData) => {
     try {
       // First upload the image if it exists
       if (formData.get('image')) {
@@ -522,7 +523,7 @@ export const adminServiceApi = {
           method: "POST",
           body: imageFormData,
           headers: {
-            // Authorization: `Bearer ${this.token}`,
+            Authorization: `Bearer ${token}`,
             Accept: "application/json",
             // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
           },
@@ -549,6 +550,7 @@ export const adminServiceApi = {
           method: "PUT",
           body: JSON.stringify(formDataObj),
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           }
         }
@@ -566,12 +568,15 @@ export const adminServiceApi = {
   },
 
   // Delete service
-  deleteService: async (serviceId) => {
+  deleteService: async (token, serviceId) => {
     try {
       const response = await fetch(
         `${baseUrl}/api/admin/services/${serviceId}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
         }
       );
       if (!response.ok) throw new Error("Failed to delete service");
