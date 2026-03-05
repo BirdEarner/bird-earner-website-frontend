@@ -41,7 +41,7 @@ export default function SuperAdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated()) {
+    if (!loading && !isAuthenticated) {
       router.push('/money_plant/sign-in');
     }
   }, [loading, isAuthenticated, router]);
@@ -56,7 +56,7 @@ export default function SuperAdminDashboard() {
   }
 
   // Don't render dashboard if not authenticated
-  if (!isAuthenticated()) {
+  if (!isAuthenticated) {
     return null;
   }
 

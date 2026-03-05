@@ -13,13 +13,13 @@ export default function Layout({ children }) {
 
   useEffect(() => {
 
-    console.log({ pathname, loading, isAuthenticated:isAuthenticated() });
-    
+    console.log({ pathname, loading, isAuthenticated: isAuthenticated });
+
     // Skip auth check for sign-in page or while loading
     if (pathname === "/money_plant/sign-in" || loading) return;
 
     // Check if user is authenticated
-    if (!isAuthenticated()) {
+    if (!isAuthenticated) {
       router.push("/money_plant/sign-in");
     }
   }, [pathname, router, isAuthenticated, loading]);
