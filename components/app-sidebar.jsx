@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image"; // Added missing Image import
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Settings,
@@ -11,8 +11,13 @@ import {
   Clock,
   HardDrive,
   FolderOpen,
+  MessageSquare,
   LogOut,
   HelpCircle,
+  RefreshCw,
+  Briefcase,
+  UserCheck,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,6 +29,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarSeparator,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/AuthContext";
 import { useRouter } from "next/navigation";
@@ -32,7 +38,7 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoaded, setIsLoaded] = useState(false);
-  const { role, logout } = useAuth();
+  const { role, logout, switchRole, user } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -44,6 +50,8 @@ export function AppSidebar() {
   }, []);
 
   const isActive = (path) => pathname === path;
+
+  const isDualRole = role?.freelancer && role?.client;
 
   if (!isLoaded) {
     return (
@@ -83,76 +91,79 @@ export function AppSidebar() {
           </h1>
         </Link>
       </SidebarHeader>
+
       <SidebarContent>
         <>
+          {/* Role Switcher – only visible to dual-role users */}
+          {isDualRole && (
+            <>
+              <SidebarGroup>
+                <SidebarGroupLabel>Active Role</SidebarGroupLabel>
+                <div className="mx-2 mb-1 flex items-center gap-1 rounded-lg border border-purple-200 bg-white/60 p-1">
+                  <button
+                    onClick={() => switchRole('freelancer')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-all ${role.active === 'freelancer'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-700 hover:bg-purple-100'
+                      }`}
+                  >
+                    <Briefcase className="h-3.5 w-3.5" />
+                    Freelancer
+                  </button>
+                  <button
+                    onClick={() => switchRole('client')}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-all ${role.active === 'client'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-purple-700 hover:bg-purple-100'
+                      }`}
+                  >
+                    <UserCheck className="h-3.5 w-3.5" />
+                    Client
+                  </button>
+                </div>
+              </SidebarGroup>
+              <SidebarSeparator />
+            </>
+          )}
+
           <SidebarGroup>
             <SidebarGroupLabel>Project Management</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link href="/dashboard/downloads" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="Downloads"
-                    isActive={isActive("/dashboard/downloads")}
-                  >
-                    <FolderOpen className="text-muted-foreground" />
-                    <span>Downloads</span>
-                  </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Dashboard"
+                  isActive={isActive("/dashboard")}
+                >
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="text-muted-foreground" />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/dashboard/upload_files" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="Upload Files"
-                    isActive={isActive("/dashboard/upload_files")}
-                  >
-                    <Upload className="text-muted-foreground" />
-                    <span>Upload Files</span>
-                  </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Inbox"
+                  isActive={isActive("/dashboard/chat")}
+                >
+                  <Link href="/dashboard/chat">
+                    <MessageSquare className="text-muted-foreground" />
+                    <span>Inbox</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/dashboard/users" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="Users"
-                    isActive={isActive("/dashboard/users")}
-                  >
-                    <Users className="text-muted-foreground" />
-                    <span>Users</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/dashboard/file_manager" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="File manager"
-                    isActive={isActive("/dashboard/file_manager")}
-                  >
-                    <FolderOpen className="text-muted-foreground" />
-                    <span>File manager</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/dashboard/storage" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="Storage"
-                    isActive={isActive("/dashboard/storage")}
-                  >
-                    <HardDrive className="text-muted-foreground" />
-                    <span>Storage</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/faqs" passHref legacyBehavior>
-                  <SidebarMenuButton
-                    tooltip="FAQs"
-                    isActive={isActive("/faqs")}
-                  >
+                <SidebarMenuButton
+                  asChild
+                  tooltip="FAQs"
+                  isActive={isActive("/faqs")}
+                >
+                  <Link href="/faqs">
                     <HelpCircle className="text-muted-foreground" />
                     <span>FAQs</span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
@@ -164,18 +175,19 @@ export function AppSidebar() {
           <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/dashboard/profile" passHref legacyBehavior>
-                <SidebarMenuButton
-                  tooltip="Profile"
-                  isActive={isActive("/dashboard/profile")}
-                >
+              <SidebarMenuButton
+                asChild
+                tooltip="Profile"
+                isActive={isActive("/dashboard/profile")}
+              >
+                <Link href="/dashboard/profile">
                   <Settings className="text-muted-foreground" />
                   <span>Profile</span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Profile" onClick={handleLogout}>
+              <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
                 <LogOut className="text-muted-foreground" />
                 <span>Logout</span>
               </SidebarMenuButton>
@@ -183,6 +195,21 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* User info at the bottom */}
+      {user && (
+        <SidebarFooter className="border-t border-purple-200 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-sm font-semibold text-white">
+              {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-purple-900">{user.name || 'User'}</p>
+              <p className="truncate text-xs text-purple-500 capitalize">{role.active}</p>
+            </div>
+          </div>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

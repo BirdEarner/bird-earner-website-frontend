@@ -44,8 +44,8 @@ export function BirdFeeConfig({ config, onChange }) {
 
     const addBracket = () => {
         const newBracket = {
-            minAmount: 0,
-            maxAmount: 0,
+            minBudget: 0,
+            maxBudget: 0,
             feeType: "FIXED",
             feeValue: 0,
         };
@@ -125,8 +125,8 @@ export function BirdFeeConfig({ config, onChange }) {
                                 <Label className="text-xs">Min</Label>
                                 <Input
                                     type="number"
-                                    value={bracket.minAmount}
-                                    onChange={(e) => updateBracket(index, "minAmount", e.target.value)}
+                                    value={bracket.minBudget}
+                                    onChange={(e) => updateBracket(index, "minBudget", e.target.value)}
                                     className="h-8 text-sm"
                                 />
                             </div>
@@ -134,8 +134,8 @@ export function BirdFeeConfig({ config, onChange }) {
                                 <Label className="text-xs">Max</Label>
                                 <Input
                                     type="number"
-                                    value={bracket.maxAmount}
-                                    onChange={(e) => updateBracket(index, "maxAmount", e.target.value)}
+                                    value={bracket.maxBudget}
+                                    onChange={(e) => updateBracket(index, "maxBudget", e.target.value)}
                                     className="h-8 text-sm"
                                 />
                             </div>
@@ -163,7 +163,7 @@ export function BirdFeeConfig({ config, onChange }) {
                                     className="h-8 text-sm"
                                 />
                             </div>
-                            <div className="col-span-2 flexjustify-end pb-1">
+                            <div className="col-span-2 flex justify-end pb-1">
                                 <Button
                                     type="button"
                                     variant="ghost"

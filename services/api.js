@@ -1,4 +1,5 @@
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+export const API_BASE_URL = baseUrl;
 
 export const adminWithdrawalApi = {
   getWithdrawalRequests: async ({
@@ -14,7 +15,8 @@ export const adminWithdrawalApi = {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-      }
+      },
+      credentials: 'include'
     });
     if (!response.ok) throw new Error("Failed to fetch withdrawal requests");
     return await response.json();
@@ -28,6 +30,7 @@ export const adminWithdrawalApi = {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ status }),
+      credentials: 'include'
     });
     if (!response.ok) throw new Error("Failed to update withdrawal status");
     return await response.json();
@@ -40,7 +43,8 @@ export const adminPaymentApi = {
     const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-      }
+      },
+      credentials: 'include'
     });
     if (!response.ok) throw new Error('Failed to fetch payment history');
     return await response.json();
@@ -50,7 +54,9 @@ export const faqApi = {
   // Get all FAQs
   getAllFaqs: async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/faqs`);
+      const response = await fetch(`${baseUrl}/api/faqs`, {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error("Failed to fetch FAQs");
       return await response.json();
     } catch (error) {
@@ -68,6 +74,7 @@ export const faqApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(faqData),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to create FAQ");
       return await response.json();
@@ -86,6 +93,7 @@ export const faqApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(faqData),
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to update FAQ");
       return await response.json();
@@ -100,6 +108,7 @@ export const faqApi = {
     try {
       const response = await fetch(`${baseUrl}/api/faqs/${id}`, {
         method: "DELETE",
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to delete FAQ");
       return await response.json();
@@ -121,6 +130,7 @@ export const adminAuthApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -144,6 +154,7 @@ export const adminAuthApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name, email, password, role }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -167,6 +178,7 @@ export const adminAuthApi = {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -189,6 +201,7 @@ export const adminAuthApi = {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -212,6 +225,7 @@ export const adminAuthApi = {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -237,6 +251,7 @@ export const contactApi = {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(contactData),
+        credentials: 'include'
       });
 
       const data = await response.json();
@@ -264,7 +279,8 @@ export const contactApi = {
       const response = await fetch(`${baseUrl}/api/admin/contacts`, {
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to fetch contacts");
       return await response.json();
@@ -281,7 +297,8 @@ export const contactApi = {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to mark contact as read");
       return await response.json();
@@ -298,7 +315,8 @@ export const contactApi = {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
-        }
+        },
+        credentials: 'include'
       });
       if (!response.ok) throw new Error("Failed to delete contact");
       return await response.json();
@@ -325,7 +343,8 @@ export const adminClientApi = {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-          }
+          },
+          credentials: 'include'
         }
       );
       if (!response.ok) throw new Error("Failed to fetch clients");
@@ -348,6 +367,7 @@ export const adminClientApi = {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ currently_available }),
+          credentials: 'include'
         }
       );
       if (!response.ok) throw new Error("Failed to update client availability");
@@ -362,7 +382,8 @@ export const adminClientApi = {
   getClientDetails: async (clientId) => {
     try {
       const response = await fetch(
-        `${baseUrl}/api/admin/clients/${clientId}/details`
+        `${baseUrl}/api/admin/clients/${clientId}/details`,
+        { credentials: 'include' }
       );
       if (!response.ok) throw new Error("Failed to fetch client details");
       return await response.json();
@@ -375,7 +396,9 @@ export const adminClientApi = {
   // Get client statistics
   getClientStats: async () => {
     try {
-      const response = await fetch(`${baseUrl}/api/admin/clients/stats`);
+      const response = await fetch(`${baseUrl}/api/admin/clients/stats`, {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error("Failed to fetch client statistics");
       return await response.json();
     } catch (error) {
@@ -395,7 +418,8 @@ export const adminFreelancerApi = {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-          }
+          },
+          credentials: 'include'
         }
       );
       if (!response.ok) throw new Error("Failed to fetch freelancers");
@@ -418,6 +442,7 @@ export const adminFreelancerApi = {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({ currently_available }),
+          credentials: 'include'
         }
       );
       if (!response.ok)
@@ -440,7 +465,8 @@ export const adminServiceApi = {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-          }
+          },
+          credentials: 'include'
         }
       );
       if (!response.ok) throw new Error("Failed to fetch services");
@@ -469,7 +495,8 @@ export const adminServiceApi = {
             Accept: "application/json",
             // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
           },
-          body: imageFormData
+          body: imageFormData,
+          credentials: 'include'
         });
 
         if (!uploadResponse.ok) {
@@ -527,6 +554,7 @@ export const adminServiceApi = {
             Accept: "application/json",
             // ⚠️ DO NOT manually set 'Content-Type' for FormData — let fetch handle it
           },
+          credentials: 'include'
         });
 
         if (!uploadResponse.ok) {
@@ -552,7 +580,8 @@ export const adminServiceApi = {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
-          }
+          },
+          credentials: 'include'
         }
       );
 
@@ -576,7 +605,8 @@ export const adminServiceApi = {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
-          }
+          },
+          credentials: 'include'
         }
       );
       if (!response.ok) throw new Error("Failed to delete service");

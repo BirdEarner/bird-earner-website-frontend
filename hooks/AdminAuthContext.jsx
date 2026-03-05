@@ -1,112 +1,154 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminAuthApi } from '@/services/api';
+import { useToast } from "@/components/ui/use-toast";
 
-// Create Admin Auth Context
 const AdminAuthContext = createContext();
 
-// Admin Auth Provider Component
 export const AdminAuthProvider = ({ children }) => {
-  const [admin, setAdmin] = useState(null);
+  const [adminUser, setAdminUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const router = useRouter();
+  const { toast } = useToast();
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Check if user is authenticated on app load
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  const verifyToken = async () => {
+    // Check localStorage first for existing session data
+    const savedToken = localStorage.getItem("token");
+    const savedAdmin = localStorage.getItem("adminUser");
 
-  const checkAuthStatus = async () => {
+    if (savedToken && savedAdmin) {
+      try {
+        setToken(savedToken);
+        setAdminUser(JSON.parse(savedAdmin));
+        setIsAuthenticated(true);
+      } catch (e) {
+        console.error("Error parsing saved admin data:", e);
+        localStorage.removeItem("token");
+        localStorage.removeItem("adminUser");
+      }
+    }
+
     try {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
-        const adminData = await adminAuthApi.verifyToken(token);
-        setAdmin(adminData);
+      // Always try to fetch current user from API (uses cookie if token missing from localStorage)
+      const res = await fetch(`${API_BASE_URL}/api/user/me`, {
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const role = data.data?.user?.role;
+        if (data.success && (role === 'admin' || role === 'superadmin')) {
+          const adminData = {
+            id: data.data.user.id,
+            name: data.data.user.name,
+            email: data.data.user.email,
+            role: role
+          };
+          setAdminUser(adminData);
+          setIsAuthenticated(true);
+          // Sync localStorage
+          localStorage.setItem("adminUser", JSON.stringify(adminData));
+
+          if (data.data.token) {
+            setToken(data.data.token);
+            localStorage.setItem("token", data.data.token);
+          }
+          return true;
+        }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('adminToken');
-    } finally {
-      setLoading(false);
+      console.error("Token verification failed:", error);
     }
+
+    // If verification failed and we were not previously authenticated by localStorage, or API rejected us
+    // we don't necessarily clear it if localStorage was valid, but if API said No, we should probably clear.
+    // However, if we are offline, we keep localStorage.
+    return false;
   };
 
-  // Login function
   const login = async (email, password) => {
+    setLoading(true);
     try {
-      setError(null);
-      setLoading(true);
-      
-      const response = await adminAuthApi.login(email, password);
-      
-      // Store token in localStorage
-      localStorage.setItem('adminToken', response.token);
-      
-      // Set admin data
-      setAdmin({
-        id: response.id,
-        name: response.name,
-        email: response.email,
-        role: response.role
+      const data = await adminAuthApi.login(email, password);
+      if (data.success) {
+        setAdminUser(data.data);
+        setToken(data.data.token);
+        setIsAuthenticated(true);
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("adminUser", JSON.stringify(data.data));
+        toast({
+          title: "Login Successful",
+          description: "Welcome back, Admin!",
+          variant: "success",
+        });
+        router.push("/money_plant/notification_management");
+        return true;
+      } else {
+        throw new Error(data.message || "Invalid credentials");
+      }
+    } catch (error) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
       });
-      
-      return response;
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message);
-      throw err;
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Logout function
-  const logout = () => {
-    localStorage.removeItem('adminToken');
-    setAdmin(null);
-    setError(null);
+  const logout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (e) {
+      console.error("Logout API call failed:", e);
+    }
+    setAdminUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem("token");
+    localStorage.removeItem("adminUser");
+    router.push("/money_plant/sign-in");
   };
 
-  // Check if user is super admin
-  const isSuperAdmin = () => {
-    return admin?.role === 'superadmin';
-  };
-
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return !!admin;
-  };
-
-  // Get auth token
-  const getToken = () => {
-    return localStorage.getItem('adminToken');
-  };
-
-  const value = {
-    admin,
-    loading,
-    error,
-    login,
-    logout,
-    isSuperAdmin,
-    isAuthenticated,
-    getToken,
-    setError
-  };
+  useEffect(() => {
+    const initAuth = async () => {
+      await verifyToken();
+      setLoading(false);
+    };
+    initAuth();
+  }, []);
 
   return (
-    <AdminAuthContext.Provider value={value}>
+    <AdminAuthContext.Provider
+      value={{
+        adminUser,
+        token,
+        isAuthenticated,
+        loading,
+        login,
+        logout,
+        verifyToken,
+      }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );
 };
 
-// Hook to use admin auth context
 export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
   if (!context) {
-    throw new Error('useAdminAuth must be used within an AdminAuthProvider');
+    throw new Error("useAdminAuth must be used within an AdminAuthProvider");
   }
   return context;
 };

@@ -155,7 +155,7 @@ function HomeContent() {
   const formatPhoneNumber = (value) => {
     // Remove all non-digit and non-plus characters
     const phoneNumber = value.replace(/[^\d\+]/g, '');
-    
+
     // Limit to reasonable length (max 16 characters including +)
     if (phoneNumber.length <= 16) {
       return phoneNumber;
@@ -166,10 +166,10 @@ function HomeContent() {
   // Handle contact form submission
   const handleContactSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     setFormErrors({});
-    
+
     // Validate form
     if (!validateForm()) {
       toast({
@@ -187,17 +187,17 @@ function HomeContent() {
         ...contactForm,
         phone: contactForm.phone.replace(/\s+/g, '') // Remove spaces before sending
       });
-      
+
       // Handle success response
       if (response.success && response.data) {
         setSubmissionSuccess(true);
         setTicketId(response.data.ticket_id);
-        
+
         toast({
           title: "Message sent successfully!",
           description: `Thank you for reaching out! Your ticket ID is ${response.data.ticket_id}. We'll get back to you soon.`,
         });
-        
+
         // Reset form
         setContactForm({
           name: '',
@@ -210,7 +210,7 @@ function HomeContent() {
       }
     } catch (error) {
       console.error('Contact form error:', error);
-      
+
       // Handle API validation errors
       if (error.message && error.message.includes('Validation error')) {
         try {
@@ -221,7 +221,7 @@ function HomeContent() {
               newErrors[err.field] = err.message;
             });
             setFormErrors(newErrors);
-            
+
             toast({
               title: "Please check your input",
               description: "Some fields need your attention. Please review and try again.",
@@ -238,7 +238,7 @@ function HomeContent() {
           return;
         }
       }
-      
+
       // Handle network errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         toast({
@@ -248,7 +248,7 @@ function HomeContent() {
         });
         return;
       }
-      
+
       // Handle timeout errors
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
         toast({
@@ -258,7 +258,7 @@ function HomeContent() {
         });
         return;
       }
-      
+
       // Handle server errors (5xx)
       if (error.message.includes('500') || error.message.includes('server')) {
         toast({
@@ -268,7 +268,7 @@ function HomeContent() {
         });
         return;
       }
-      
+
       // Handle rate limiting
       if (error.message.includes('429') || error.message.includes('rate limit')) {
         toast({
@@ -278,7 +278,7 @@ function HomeContent() {
         });
         return;
       }
-      
+
       // Generic error handling with more helpful message
       toast({
         title: "Failed to send message",
@@ -293,7 +293,7 @@ function HomeContent() {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Special handling for phone number formatting
     if (name === 'phone') {
       const formattedPhone = formatPhoneNumber(value);
@@ -307,7 +307,7 @@ function HomeContent() {
         [name]: value
       }));
     }
-    
+
     // Clear error for this field when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
@@ -820,7 +820,7 @@ function HomeContent() {
         className="py-24 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-white to-purple-50 relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.1),transparent)] pointer-events-none"></div>
-        
+
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
@@ -847,7 +847,7 @@ function HomeContent() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-xl text-purple-700/70 max-w-2xl mx-auto"
             >
-              Have questions or suggestions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+              Have questions or suggestions? We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
             </motion.p>
           </div>
 
@@ -861,9 +861,9 @@ function HomeContent() {
               className="space-y-8"
             >
               <div>
-                <h3 className="text-2xl font-bold text-purple-900 mb-6">Let's Connect</h3>
+                <h3 className="text-2xl font-bold text-purple-900 mb-6">Let&apos;s Connect</h3>
                 <p className="text-lg text-purple-700/80 mb-8">
-                  Ready to start your journey with BirdEarner? We're here to help you every step of the way.
+                  Ready to start your journey with BirdEarner? We&apos;re here to help you every step of the way.
                 </p>
               </div>
 
@@ -946,9 +946,8 @@ function HomeContent() {
                           value={contactForm.name}
                           onChange={handleInputChange}
                           required
-                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                            formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                       </div>
                       {formErrors.name && (
@@ -970,9 +969,8 @@ function HomeContent() {
                           value={contactForm.email}
                           onChange={handleInputChange}
                           required
-                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                            formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                          }`}
+                          className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                            }`}
                         />
                       </div>
                       {formErrors.email && (
@@ -995,9 +993,8 @@ function HomeContent() {
                         value={contactForm.phone}
                         onChange={handleInputChange}
                         required
-                        className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                          formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
+                        className={`pl-10 border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                          }`}
                       />
                     </div>
                     {formErrors.phone && (
@@ -1019,9 +1016,8 @@ function HomeContent() {
                       onChange={handleInputChange}
                       required
                       maxLength={500}
-                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${
-                        formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                      }`}
+                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 ${formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                     />
                     {formErrors.subject && (
                       <p className="text-sm text-red-600 mt-1">{formErrors.subject}</p>
@@ -1042,9 +1038,8 @@ function HomeContent() {
                       required
                       rows={5}
                       maxLength={5000}
-                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 resize-none ${
-                        formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                      }`}
+                      className={`border-purple-200 focus:border-purple-500 focus:ring-purple-500 resize-none ${formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                     />
                     {formErrors.message && (
                       <p className="text-sm text-red-600 mt-1">{formErrors.message}</p>
@@ -1080,13 +1075,13 @@ function HomeContent() {
                   <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
                     <CheckCircle className="w-10 h-10 text-white" />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h3 className="text-2xl font-bold text-purple-900">
                       Message Sent Successfully!
                     </h3>
                     <p className="text-purple-700/80 text-lg">
-                      Thank you for reaching out to us. We've received your message and will get back to you as soon as possible.
+                      Thank you for reaching out to us. We&apos;ve received your message and will get back to you as soon as possible.
                     </p>
                   </div>
 

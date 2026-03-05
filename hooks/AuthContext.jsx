@@ -1,15 +1,11 @@
 "use client";
 
-import { Query } from 'appwrite';
-import { appwriteConfig } from './appwrite_config';
-import { databases } from './appwrite_config';
-import { account } from './appwrite_config';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from "@/services/api";
 
-// Create Context
 const AuthContext = createContext();
 
-// AuthProvider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,97 +18,133 @@ export const AuthProvider = ({ children }) => {
     clientData: null,
   });
   const [userData, setUserData] = useState(null);
+  const router = useRouter();
 
-  // Login function
-  const login = async (email, password) => {
-    try {
-      setError(null);
-      const session = await account.createEmailPasswordSession(email, password);
-      fetchUser(); // Fetch user data after successful login
-      return session;
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    }
-  };
-
-  // Logout function
-  const logout = async () => {
-    try {
-      await account.deleteSession('current');
-      setUser(null);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  // Fetch current user data
   const fetchUser = async () => {
     try {
-      const currentUser = await account.get();
-      setUser(currentUser);
-
-      const responseF = await databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.freelancerCollectionId,
-        [Query.equal('email', currentUser.email)],
-      );
-
-      const responseC = await databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.clientCollectionId,
-        [Query.equal('email', currentUser.email)],
-      );
-
-      const roleData = {
-        freelancer: false,
-        client: false,
-        active: 'client',
-        freelancerData: null,
-        clientData: null,
-      };
-
-      if (responseF.documents.length > 0) {
-        roleData.freelancer = true;
-        roleData.freelancerData = responseF.documents[0];
-      }
-      if (responseC.documents.length > 0) {
-        roleData.client = true;
-        roleData.clientData = responseC.documents[0];
+      const res = await fetch(`${API_BASE_URL}/api/user/me`, {
+        credentials: 'include'
+      });
+      if (!res.ok) {
+        setUser(null);
+        setRole({
+          freelancer: false,
+          client: false,
+          active: 'client',
+          freelancerData: null,
+          clientData: null,
+        });
+        setUserData(null);
+        return;
       }
 
-      // Auto Set Role if only one role is present
-      if (roleData.freelancer && !roleData.client) {
-        roleData.active = 'freelancer';
-        setUserData(roleData.freelancerData);
-      } else if (!roleData.freelancer && roleData.client) {
-        roleData.active = 'client';
-        setUserData(roleData.clientData);
+      const data = await res.json();
+      if (data.success) {
+        const currentUser = data.data;
+        setUser(currentUser);
+
+        const roleData = {
+          freelancer: !!currentUser.freelancer,
+          client: !!currentUser.client,
+          active: 'client',
+          freelancerData: currentUser.freelancer,
+          clientData: currentUser.client,
+        };
+
+        if (roleData.freelancer && !roleData.client) {
+          roleData.active = 'freelancer';
+          setUserData(roleData.freelancerData);
+        } else if (!roleData.freelancer && roleData.client) {
+          roleData.active = 'client';
+          setUserData(roleData.clientData);
+        } else {
+          // User has both or neither; default to client profile data if available
+          setUserData(roleData.clientData || roleData.freelancerData);
+        }
+        setRole(roleData);
+      } else {
+        setUser(null);
       }
-
-
-
-      setRole(roleData);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // Register function
-  const register = async (email, password, name) => {
+  // Switch the active role for dual-role users
+  const switchRole = (newRole) => {
+    if (newRole === 'freelancer' && role.freelancerData) {
+      setRole(prev => ({ ...prev, active: 'freelancer' }));
+      setUserData(role.freelancerData);
+    } else if (newRole === 'client' && role.clientData) {
+      setRole(prev => ({ ...prev, active: 'client' }));
+      setUserData(role.clientData);
+    }
+  };
+
+  const login = async (email, password) => {
     try {
       setError(null);
-      const newUser = await account.create('unique()', email, password, name);
-      return newUser;
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      await fetchUser();
+      return data;
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setUser(null);
+      setRole({
+        freelancer: false,
+        client: false,
+        active: 'client',
+        freelancerData: null,
+        clientData: null,
+      });
+      setUserData(null);
+      router.push('/sign-in');
     } catch (err) {
       setError(err.message);
     }
   };
 
-  // Automatically fetch user on load
-  React.useEffect(() => {
+  const register = async (email, password, name, type = 'client') => {
+    try {
+      const endpoint = type === 'freelancer' ? '/api/auth/register/freelancer' : '/api/auth/register/client';
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName: name }),
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Registration failed');
+      return data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, []);
 
@@ -125,11 +157,12 @@ export const AuthProvider = ({ children }) => {
         role,
         userData,
         setRole,
+        switchRole,
         login,
         logout,
         register,
         fetchUser,
-        setError
+        setError,
       }}
     >
       {!loading && children}
@@ -137,7 +170,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use the AuthContext
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

@@ -67,7 +67,7 @@ export default function SuperAdminDashboard() {
           Super Admin Dashboard
         </h1>
         <p className="text-black/70">
-          Welcome back{admin?.name ? `, ${admin.name}` : ''}! Here's an overview of your platform.
+          Welcome back{admin?.name ? `, ${admin.name}` : ''}! Here&apos;s an overview of your platform.
         </p>
       </div>
 
@@ -128,16 +128,16 @@ export default function SuperAdminDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="clients" 
-                  stroke="#8884d8" 
+                <Line
+                  type="monotone"
+                  dataKey="clients"
+                  stroke="#8884d8"
                   name="Clients"
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="freelancers" 
-                  stroke="#82ca9d" 
+                <Line
+                  type="monotone"
+                  dataKey="freelancers"
+                  stroke="#82ca9d"
                   name="Freelancers"
                 />
               </LineChart>

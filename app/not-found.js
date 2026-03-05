@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-purple-50/50 p-4">
-      <motion.div 
+      <motion.div
         className="w-full max-w-md space-y-8 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -31,24 +31,23 @@ export default function NotFound() {
         {/* 404 Text */}
         <div className="space-y-2">
           <h1 className="text-9xl font-bold text-purple-600">404</h1>
-          <h2 className="text-2xl font-semibold text-black">Page Not Found</h2>
-          <p className="text-black/70">
-            Oops! The page you're looking for doesn't exist or has been moved.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl">Page not found</h2>
+          <p className="mt-6 text-base leading-7 text-gray-600">Sorry, we couldn&apos;t find the page you&apos;re looking for.</p>
         </div>
 
         {/* Actions */}
         <div className="space-y-6">
           {/* Back to Home Button */}
           <div>
-            <Link href="/dashboard" passHref>
-              <Button
-                className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-              >
+            <Button
+              asChild
+              className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Link href="/dashboard">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           {/* Additional Links */}

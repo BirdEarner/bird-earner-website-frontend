@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { API_BASE_URL } from "@/services/api";
 import {
   Bell,
   Users,
@@ -36,8 +37,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { databases, appwriteConfig, storage } from "@/hooks/appwrite_config";
-import { Query, ID } from "appwrite";
 import Image from "next/image";
 
 export default function NotificationManagementPage() {
@@ -105,60 +104,43 @@ export default function NotificationManagementPage() {
     setNotificationImagePreview("");
   };
 
-  // Fetch users from backend
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setIsLoadingUsers(true);
-        
-        // Fetch clients
-        const clientsResponse = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.clientCollectionId
-        );
+  // Fetch users
+  const fetchUsers = useCallback(async () => {
+    if (!activeTab) return; // Only fetch if tab is active (logic can be adjusted)
 
-        // Fetch freelancers
-        const freelancersResponse = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.freelancerCollectionId
-        );
+    // Actually we only need users for 'send' tab or just generally
+    try {
+      setIsLoadingUsers(true);
+      const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const data = await res.json();
 
-        // Combine and format users
-        const allUsers = [
-          ...clientsResponse.documents.map(client => ({
-            id: client.$id,
-            name: client.full_name,
-            email: client.email,
-            type: 'client'
-          })),
-          ...freelancersResponse.documents.map(freelancer => ({
-            id: freelancer.$id,
-            name: freelancer.full_name,
-            email: freelancer.email,
-            type: 'freelancer'
-          }))
-        ];
-
-        setUsers(allUsers);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load users. Please try again.",
-        });
-      } finally {
-        setIsLoadingUsers(false);
+      if (data.success) {
+        setUsers(data.data || []);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
 
+  }, [toast]);
+
+  useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (user.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (user.email?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
   const handleUserSelect = (user) => {
@@ -171,50 +153,57 @@ export default function NotificationManagementPage() {
     setSelectedUsers(selectedUsers.filter((user) => user.id !== userId));
   };
 
-  // Fetch scheduled notifications
-  const fetchScheduledNotifications = async () => {
+  // Fetch notifications
+  const fetchScheduledNotifications = useCallback(async () => {
     try {
       setIsLoadingScheduled(true);
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.notificationsCollectionId,
-        [
-          Query.equal('status', 'scheduled'),
-          Query.greaterThan('schedule_date', new Date().toISOString()),
-          Query.orderAsc('schedule_date'),
-        ]
-      );
-      setScheduledNotifications(response.documents);
+      const res = await fetch(`${API_BASE_URL}/api/admin/notifications`, {
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      const data = await res.json();
+
+      if (data.success) {
+        setScheduledNotifications(data.data || []);
+      }
     } catch (error) {
-      console.error('Error fetching scheduled notifications:', error);
+      console.error("Error fetching notifications:", error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to load scheduled notifications.",
+        description: "Failed to fetch scheduled notifications",
+        variant: "destructive",
       });
     } finally {
       setIsLoadingScheduled(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchScheduledNotifications();
+  }, [fetchScheduledNotifications]);
 
   // Delete scheduled notification
   const handleDeleteNotification = async (notificationId) => {
     try {
-      await databases.deleteDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.notificationsCollectionId,
-        notificationId
-      );
-
-      // Remove from local state
-      setScheduledNotifications(prev => 
-        prev.filter(notification => notification.$id !== notificationId)
-      );
-
-      toast({
-        title: "Success",
-        description: "Scheduled notification deleted successfully",
+      const res = await fetch(`${API_BASE_URL}/api/admin/notifications/${notificationId}`, {
+        method: 'DELETE',
+        credentials: 'include'
       });
+      const data = await res.json();
+
+      if (data.success) {
+        // Remove from local state
+        setScheduledNotifications(prev =>
+          prev.filter(notification => notification.id !== notificationId)
+        );
+
+        toast({
+          title: "Success",
+          description: "Scheduled notification deleted successfully",
+        });
+      } else {
+        throw new Error(data.message || "Failed to delete");
+      }
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast({
@@ -225,10 +214,7 @@ export default function NotificationManagementPage() {
     }
   };
 
-  // Fetch scheduled notifications on mount
-  useEffect(() => {
-    fetchScheduledNotifications();
-  }, []);
+
 
   const handleSendNotification = async () => {
     setIsLoading(true);
@@ -253,43 +239,71 @@ export default function NotificationManagementPage() {
       // Upload image if present
       let imageUrl = null;
       if (notificationImage) {
-        const fileUpload = await storage.createFile(
-          appwriteConfig.notificationBucketId,
-          ID.unique(),
-          notificationImage
-        );
-        imageUrl = storage.getFileView(appwriteConfig.notificationBucketId, fileUpload.$id);
+        const formData = new FormData();
+        formData.append('file', notificationImage);
+        formData.append('category', 'notification_images');
+
+        const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (!uploadRes.ok) throw new Error("Image upload failed");
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.secure_url;
       }
 
       // Prepare notification data
-      const notification = {
+      const payload = {
         title: notificationData.title,
         message: notificationData.message,
-        target_type: notificationData.targetType,
-        scheduled: notificationData.scheduleEnabled,
-        schedule_date: notificationData.scheduleEnabled ? 
+        type: notificationData.targetType, // Map targetType to 'type' in API? API expects 'type' like 'INFO', 'WARNING' etc?
+        // Wait, API _post.ts expects: title, message, type (notification type like info/warning), targetUsers (ids), scheduledAt
+        // BUT my frontend has targetType (all/clients/freelancers/specific).
+        // Let's check API implementation for 'type'.
+        // API _post.ts: `const { title, message, type, targetUsers, scheduledAt, imageUrl, link, specificUserIds } = await req.json();`
+        // It seems `type` is confusing.
+        // Frontend uses `type` for icon/color logic usually.
+        // But here `targetType` is for audience.
+        // I will assume `type` = 'INFO' or similar for generic notifications.
+        // And pass `targetType` logic via specific fields?
+        // API _post.ts logic:
+        /*
+        let usersToNotify = [];
+        if (targetUsers === 'all') ...
+        else if (targetUsers === 'clients') ...
+        else if (targetUsers === 'freelancers') ...
+        else if (targetUsers === 'specific') ...
+        */
+        // So API expects `targetUsers` field for audience.
+        // And `type` for notification category (e.g. 'ANNOUNCEMENT').
+
+        targetUsers: notificationData.targetType, // 'all', 'clients', 'freelancers', 'specific'
+        specificUserIds: notificationData.targetType === "specific" ? selectedUsers.map(u => u.id) : [],
+        scheduledAt: notificationData.scheduleEnabled ?
           `${notificationData.scheduleDate}T${notificationData.scheduleTime}:00.000Z` : null,
-        recipients: notificationData.targetType === "specific" ? 
-          selectedUsers.map(user => user.id) : [],
-        status: notificationData.scheduleEnabled ? "scheduled" : "sent",
-        created_at: new Date().toISOString(),
-        image_url: imageUrl,
-        location: notificationData.location,
+        imageUrl: imageUrl,
+        link: notificationData.location, // Mapping location to link/data
+        type: 'ANNOUNCEMENT' // Default type
       };
 
-      // Create notification document in database
-      await databases.createDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.notificationsCollectionId,
-        ID.unique(),
-        notification
-      );
+      const res = await fetch(`${API_BASE_URL}/api/admin/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Failed to send notification");
 
       toast({
         title: "Success",
         description: notificationData.scheduleEnabled
           ? "Notification scheduled successfully"
           : "Notification sent successfully",
+        variant: "success"
       });
 
       // Reset form
@@ -324,6 +338,7 @@ export default function NotificationManagementPage() {
 
   // Format date for display
   const formatScheduleDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
       dateStyle: 'medium',
@@ -682,7 +697,7 @@ export default function NotificationManagementPage() {
                 </thead>
                 <tbody className="divide-y divide-purple-200">
                   {scheduledNotifications.map((notification) => (
-                    <tr key={notification.$id} className="hover:bg-purple-50/50">
+                    <tr key={notification.id} className="hover:bg-purple-50/50">
                       <td className="px-4 py-3 text-sm text-purple-900">{notification.title}</td>
                       <td className="px-4 py-3 text-sm text-purple-700">
                         {notification.message.length > 50
@@ -691,22 +706,25 @@ export default function NotificationManagementPage() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="capitalize">
-                          {notification.target_type}
+                          {notification.type || 'all'}
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline">
-                          {notificationLocations.find(loc => loc.value === notification.location)?.label || notification.location}
+                          {/* Need deeper data mapping if API returns structured data or just string */}
+                          {/* Assuming API returns data object with location, or we store it in data field? */}
+                          {/* _post.ts logic for creating: location: notificationData.location */}
+                          {notification.data?.location || "N/A"}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm text-purple-700">
-                        {formatScheduleDate(notification.schedule_date)}
+                        {formatScheduleDate(notification.scheduledAt)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteNotification(notification.$id)}
+                          onClick={() => handleDeleteNotification(notification.id)}
                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -790,4 +808,4 @@ export default function NotificationManagementPage() {
       </Dialog>
     </div>
   );
-} 
+}
