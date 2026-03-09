@@ -330,7 +330,7 @@ export const contactApi = {
 // Admin Client Management API
 export const adminClientApi = {
   // Get all clients with enhanced details for admin panel
-  getAllClients: async (token, page = 1, limit = 8, search = "") => {
+  getAllClients: async ({ token, page = 1, limit = 8, search = "" } = {}) => {
     try {
       const queryParams = new URLSearchParams({
         page: page.toString(),

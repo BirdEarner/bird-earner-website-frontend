@@ -19,14 +19,58 @@ export default function SettingsPage() {
     const handleSave = async (e) => {
         e.preventDefault();
         setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSaving(false);
+
+        try {
+            const formData = new FormData(e.target);
+            const name = formData.get("name");
+            const currentPassword = formData.get("current_password");
+            const newPassword = formData.get("new_password");
+            const confirmPassword = formData.get("confirm_password");
+
+            const payload = {};
+            if (name) payload.name = name;
+
+            if (currentPassword || newPassword || confirmPassword) {
+                if (!currentPassword || !newPassword) {
+                    throw new Error("Both current and new password are required for change");
+                }
+                if (newPassword !== confirmPassword) {
+                    throw new Error("New passwords do not match");
+                }
+                payload.currentPassword = currentPassword;
+                payload.newPassword = newPassword;
+            }
+
+            if (Object.keys(payload).length === 0) {
+                setIsSaving(false);
+                return;
+            }
+
+            const res = await fetch("/api/admin/settings", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+
+            if (!res.ok) {
+                throw new Error(result.message || "Failed to save settings");
+            }
+
             toast({
                 title: "Settings Saved",
                 description: "Your preferences have been updated successfully.",
             });
-        }, 1000);
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -68,7 +112,7 @@ export default function SettingsPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="name">Full Name</Label>
-                                        <Input id="name" defaultValue={admin?.name} className="border-purple-200" />
+                                        <Input id="name" name="name" defaultValue={admin?.name} className="border-purple-200" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="email">Email Address</Label>
@@ -97,16 +141,16 @@ export default function SettingsPage() {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="current_password">Current Password</Label>
-                                    <Input id="current_password" type="password" className="border-purple-200" />
+                                    <Input id="current_password" name="current_password" type="password" className="border-purple-200" />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="new_password">New Password</Label>
-                                        <Input id="new_password" type="password" className="border-purple-200" />
+                                        <Input id="new_password" name="new_password" type="password" className="border-purple-200" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="confirm_password">Confirm New Password</Label>
-                                        <Input id="confirm_password" type="password" className="border-purple-200" />
+                                        <Input id="confirm_password" name="confirm_password" type="password" className="border-purple-200" />
                                     </div>
                                 </div>
                             </CardContent>

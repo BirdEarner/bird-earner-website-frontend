@@ -62,7 +62,12 @@ export default function ClientsPage() {
       try {
         setIsLoading(true);
         const token = getToken();
-        const response = await adminClientApi.getAllClients(token, currentPage, itemsPerPage, debouncedSearchQuery);
+        const response = await adminClientApi.getAllClients({
+          token,
+          page: currentPage,
+          limit: itemsPerPage,
+          search: debouncedSearchQuery
+        });
 
         if (response.success) {
           setClients(response.data.clients);

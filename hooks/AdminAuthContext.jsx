@@ -34,20 +34,19 @@ export const AdminAuthProvider = ({ children }) => {
     }
 
     try {
-      // Always try to fetch current user from API (uses cookie if token missing from localStorage)
-      const res = await fetch(`${API_BASE_URL}/api/user/me`, {
+      // Always try to fetch current admin from API
+      const res = await fetch(`${API_BASE_URL}/api/admin/verify`, {
         credentials: 'include'
       });
 
       if (res.ok) {
         const data = await res.json();
-        const role = data.data?.user?.role;
-        if (data.success && (role === 'admin' || role === 'superadmin')) {
+        if (data.success && data.data) {
           const adminData = {
-            id: data.data.user.id,
-            name: data.data.user.name,
-            email: data.data.user.email,
-            role: role
+            id: data.data.id,
+            name: data.data.name,
+            email: data.data.email,
+            role: data.data.role
           };
           setAdminUser(adminData);
           setIsAuthenticated(true);
@@ -138,6 +137,7 @@ export const AdminAuthProvider = ({ children }) => {
         login,
         logout,
         verifyToken,
+        getToken: () => token || localStorage.getItem("token"),
       }}
     >
       {children}
