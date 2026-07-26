@@ -637,3 +637,97 @@ export const loadImageURI = (uri) => {
     return null; // Return null for invalid URIs
   }
 };
+
+async function uploadHomePromoImage(token, file) {
+  const imageFormData = new FormData();
+  imageFormData.append("file", file);
+  imageFormData.append("category", "home_promo_images");
+
+  const uploadResponse = await fetch(`${baseUrl}/api/upload?category=home_promo_images`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+    body: imageFormData,
+    credentials: "include",
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error("Failed to upload image");
+  }
+
+  const uploadResult = await uploadResponse.json();
+  return uploadResult?.data?.url || uploadResult?.secure_url;
+}
+
+export const adminHomePromoApi = {
+  list: async (token, placement = "") => {
+    const params = new URLSearchParams();
+    if (placement) params.set("placement", placement);
+    const response = await fetch(
+      `${baseUrl}/api/admin/home-promos?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) throw new Error("Failed to fetch home promos");
+    return response.json();
+  },
+
+  create: async (token, payload, imageFile) => {
+    const body = { ...payload };
+    if (imageFile) {
+      body.imageUrl = await uploadHomePromoImage(token, imageFile);
+    }
+    const response = await fetch(`${baseUrl}/api/admin/home-promos`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to create home promo");
+    }
+    return response.json();
+  },
+
+  update: async (token, id, payload, imageFile) => {
+    const body = { ...payload };
+    if (imageFile) {
+      body.imageUrl = await uploadHomePromoImage(token, imageFile);
+    }
+    const response = await fetch(`${baseUrl}/api/admin/home-promos/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to update home promo");
+    }
+    return response.json();
+  },
+
+  remove: async (token, id) => {
+    const response = await fetch(`${baseUrl}/api/admin/home-promos/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to delete home promo");
+    }
+    return response.json();
+  },
+};

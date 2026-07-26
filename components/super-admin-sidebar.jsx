@@ -14,7 +14,8 @@ import {
   UserCog,
   Bell,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Megaphone
 } from "lucide-react";
 import {
   Sidebar,
@@ -166,6 +167,17 @@ export function SuperAdminSidebar() {
                 >
                   <Briefcase className="text-muted-foreground" />
                   <span>Services</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/money_plant/home_promos">
+                <SidebarMenuButton
+                  tooltip="Home Promos"
+                  isActive={isActive("/money_plant/home_promos")}
+                >
+                  <Megaphone className="text-muted-foreground" />
+                  <span>Home Promos</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
