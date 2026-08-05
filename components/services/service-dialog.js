@@ -38,6 +38,7 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
     }
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [birdFeeValid, setBirdFeeValid] = useState(true);
 
   useEffect(() => {
     if (service) {
@@ -108,15 +109,20 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
     }));
   };
 
-  const handleBirdFeeChange = (config) => {
+  const handleBirdFeeChange = (config, valid) => {
     setFormData((prev) => ({
       ...prev,
       birdFee: config,
     }));
+    setBirdFeeValid(typeof valid === 'boolean' ? valid : true);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!birdFeeValid) {
+      alert('Please fix Bird Fee configuration errors before saving.');
+      return;
+    }
     const submitData = new FormData();
     submitData.append("name", formData.name);
     submitData.append("category", formData.category);

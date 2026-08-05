@@ -17,29 +17,58 @@ export function BirdFeeConfig({ config, onChange }) {
         maximumBudget: 0,
         feeStructure: [],
     });
+    const [globalError, setGlobalError] = useState(null);
+    const [bracketErrors, setBracketErrors] = useState([]);
+    const validateConfig = (cfg) => {
+        const errors = [];
+        let gErr = null;
+        const minG = Number(cfg.minimumBudget) || 0;
+        const maxG = Number(cfg.maximumBudget) || 0;
+        if (maxG > 0 && maxG < minG) {
+            gErr = 'Maximum Budget (Global) must be greater than or equal to Minimum Budget (Global)';
+        }
+
+        const bErrors = cfg.feeStructure.map((b) => {
+            const minB = Number(b.minBudget) || 0;
+            const maxB = Number(b.maxBudget) || 0;
+            if (maxB > 0 && maxB < minB) {
+                return 'Max must be >= Min';
+            }
+            return null;
+        });
+
+        setGlobalError(gErr);
+        setBracketErrors(bErrors);
+        const isValid = !gErr && bErrors.every((e) => !e);
+        return isValid;
+    };
+
+    const updateConfig = (newConfig) => {
+        setLocalConfig(newConfig);
+        const valid = validateConfig(newConfig);
+        if (typeof onChange === 'function') onChange(newConfig, valid);
+    };
 
     useEffect(() => {
         if (config) {
             // Ensure structure exists even if passed object is partial or old format
-            setLocalConfig({
+            const normalized = {
                 minimumBudget: config.minimumBudget || 0,
                 maximumBudget: config.maximumBudget || 0,
                 feeStructure: Array.isArray(config.feeStructure) ? config.feeStructure : []
-            });
+            };
+            setLocalConfig(normalized);
+            validateConfig(normalized);
         }
     }, [config]);
 
-    const updateConfig = (newConfig) => {
-        setLocalConfig(newConfig);
-        onChange(newConfig);
-    };
-
     const handleGlobalChange = (e) => {
         const { name, value } = e.target;
-        updateConfig({
+        const newCfg = {
             ...localConfig,
             [name]: parseFloat(value) || 0,
-        });
+        };
+        updateConfig(newCfg);
     };
 
     const addBracket = () => {
@@ -69,10 +98,11 @@ export function BirdFeeConfig({ config, onChange }) {
             ...newStructure[index],
             [field]: field === "feeType" ? value : (parseFloat(value) || 0),
         };
-        updateConfig({
+        const newCfg = {
             ...localConfig,
             feeStructure: newStructure,
-        });
+        };
+        updateConfig(newCfg);
     };
 
     return (
@@ -105,6 +135,7 @@ export function BirdFeeConfig({ config, onChange }) {
             </div>
 
             <div className="space-y-2">
+                {globalError && <div className="text-sm text-destructive">{globalError}</div>}
                 <div className="flex justify-between items-center">
                     <Label>Fee Brackets</Label>
                     <Button type="button" variant="outline" size="sm" onClick={addBracket}>
@@ -125,6 +156,7 @@ export function BirdFeeConfig({ config, onChange }) {
                                 <Label className="text-xs">Min</Label>
                                 <Input
                                     type="number"
+                                    min="0"
                                     value={bracket.minBudget}
                                     onChange={(e) => updateBracket(index, "minBudget", e.target.value)}
                                     className="h-8 text-sm"
@@ -134,6 +166,7 @@ export function BirdFeeConfig({ config, onChange }) {
                                 <Label className="text-xs">Max</Label>
                                 <Input
                                     type="number"
+                                    min="0"
                                     value={bracket.maxBudget}
                                     onChange={(e) => updateBracket(index, "maxBudget", e.target.value)}
                                     className="h-8 text-sm"
@@ -158,6 +191,7 @@ export function BirdFeeConfig({ config, onChange }) {
                                 <Label className="text-xs">Value</Label>
                                 <Input
                                     type="number"
+                                    min="0"
                                     value={bracket.feeValue}
                                     onChange={(e) => updateBracket(index, "feeValue", e.target.value)}
                                     className="h-8 text-sm"
@@ -174,6 +208,9 @@ export function BirdFeeConfig({ config, onChange }) {
                                     <Trash2 className="w-4 h-4" />
                                 </Button>
                             </div>
+                            {bracketErrors[index] && (
+                                <div className="col-span-12 text-sm text-destructive">{bracketErrors[index]}</div>
+                            )}
                         </div>
                     ))}
                 </div>

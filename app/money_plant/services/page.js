@@ -111,7 +111,9 @@ export default function ServicesPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Services Management</h1>
+        {/* <h1 className="text-2xl font-bold">Services Management</h1> */}
+        <h1 className="text-2xl font-bold">Dhanshree Shinde</h1>
+
         <Button onClick={handleAdd}>
           <Plus className="w-4 h-4 mr-2" />
           Add Service
