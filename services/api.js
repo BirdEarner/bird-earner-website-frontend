@@ -731,3 +731,47 @@ export const adminHomePromoApi = {
     return response.json();
   },
 };
+
+export const adminSuggestedServiceApi = {
+  getSuggestedServices: async ({ token, page = 1, limit = 10, status = "all", search = "" } = {}) => {
+    try {
+      const params = new URLSearchParams({ page, limit, status, search });
+      const response = await fetch(`${baseUrl}/api/admin/suggested-services?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const err = new Error(errorData.message || `Failed to fetch suggested services (${response.status})`);
+        err.status = response.status;
+        throw err;
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  updateSuggestionStatus: async (token, { id, action, matchedServiceId, category, description, imageUrl }) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/admin/suggested-services`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, action, matchedServiceId, category, description, imageUrl }),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || "Failed to update suggestion");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+};
