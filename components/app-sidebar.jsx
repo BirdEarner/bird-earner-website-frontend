@@ -53,6 +53,21 @@ export function AppSidebar() {
 
   const isDualRole = role?.freelancer && role?.client;
 
+  const handleRoleSwitch = (targetRole) => {
+    if (targetRole === role.active) return;
+
+    const hasTargetProfile =
+      (targetRole === 'freelancer' && role?.freelancerData) ||
+      (targetRole === 'client' && role?.clientData);
+
+    if (!hasTargetProfile) {
+      router.push('/dashboard/settings');
+      return;
+    }
+
+    switchRole(targetRole);
+  };
+
   if (!isLoaded) {
     return (
       <Sidebar className="border-r border-purple-200 bg-purple-100/50">
@@ -94,14 +109,14 @@ export function AppSidebar() {
 
       <SidebarContent>
         <>
-          {/* Role Switcher – only visible to dual-role users */}
-          {isDualRole && (
+          {/* Role Switcher – visible to all users */}
+          {user && (
             <>
               <SidebarGroup>
                 <SidebarGroupLabel>Active Role</SidebarGroupLabel>
                 <div className="mx-2 mb-1 flex items-center gap-1 rounded-lg border border-purple-200 bg-white/60 p-1">
                   <button
-                    onClick={() => switchRole('freelancer')}
+                    onClick={() => handleRoleSwitch('freelancer')}
                     className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-all ${role.active === 'freelancer'
                       ? 'bg-purple-600 text-white shadow-sm'
                       : 'text-purple-700 hover:bg-purple-100'
@@ -111,7 +126,7 @@ export function AppSidebar() {
                     Freelancer
                   </button>
                   <button
-                    onClick={() => switchRole('client')}
+                    onClick={() => handleRoleSwitch('client')}
                     className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-all ${role.active === 'client'
                       ? 'bg-purple-600 text-white shadow-sm'
                       : 'text-purple-700 hover:bg-purple-100'
