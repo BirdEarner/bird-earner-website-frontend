@@ -1,26 +1,24 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
-import Image from "next/image";
 import { loadImageURI } from "@/services/api";
 
 export function ServiceCard({ service, onEdit, onDelete }) {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="relative h-48">
+      <div className="relative h-48 w-full bg-gray-100">
         {service.imageUrl ? (
           <img
             src={loadImageURI(service.imageUrl)}
             alt={service.name}
-            fill
-            className="object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
             No Image
           </div>
         )}
-      </CardHeader>
+      </div>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-4">
           <div>

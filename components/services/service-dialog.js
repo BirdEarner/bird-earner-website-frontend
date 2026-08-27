@@ -18,6 +18,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { BirdFeeConfig } from "./bird-fee-config";
 import { ServicePriorityConfig } from "./service-priority-config";
+import { ImageCropDialog } from "./image-crop-dialog";
 import { loadImageURI } from "@/services/api";
 
 export function ServiceDialog({ open, onClose, service, onSave }) {
@@ -39,6 +40,8 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [birdFeeValid, setBirdFeeValid] = useState(true);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
 
   useEffect(() => {
     if (service) {
@@ -90,16 +93,28 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        image: file,
-      }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setImageToCrop(reader.result);
+        setCropDialogOpen(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropComplete = (croppedFile, croppedUrl) => {
+    setFormData((prev) => ({
+      ...prev,
+      image: croppedFile,
+    }));
+    setImagePreview(croppedUrl);
+    setCropDialogOpen(false);
+    setImageToCrop(null);
+  };
+
+  const handleCropCancel = () => {
+    setCropDialogOpen(false);
+    setImageToCrop(null);
   };
 
   const handlePriorityConfigChange = (config) => {
@@ -223,6 +238,14 @@ export function ServiceDialog({ open, onClose, service, onSave }) {
             <Button type="submit">Save</Button>
           </div>
         </form>
+
+        <ImageCropDialog
+          open={cropDialogOpen}
+          onClose={handleCropCancel}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
       </DialogContent>
     </Dialog>
   );
