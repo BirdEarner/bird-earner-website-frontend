@@ -16,7 +16,8 @@ import {
   Briefcase,
   MessageSquare,
   Megaphone,
-  Sparkles
+  Sparkles,
+  ShieldAlert
 } from "lucide-react";
 import {
   Sidebar,
@@ -135,6 +136,17 @@ export function SuperAdminSidebar() {
                 >
                   <DollarSign className="text-muted-foreground" />
                   <span>Payout Requests</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/money_plant/disputes">
+                <SidebarMenuButton
+                  tooltip="Disputes"
+                  isActive={isActive("/money_plant/disputes")}
+                >
+                  <ShieldAlert className="text-muted-foreground" />
+                  <span>Disputes</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

@@ -50,6 +50,42 @@ export const adminPaymentApi = {
     return await response.json();
   },
 };
+
+export const adminDisputesApi = {
+  getDisputes: async ({ token, status }) => {
+    const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+    const url = `${baseUrl}/api/admin/disputes${status ? `?status=${status}` : ''}`;
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to fetch disputes');
+    }
+    return await response.json();
+  },
+  resolveDispute: async ({ token, id, action, resolutionNotes }) => {
+    const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+    const url = `${baseUrl}/api/admin/disputes/${id}/resolve`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, resolutionNotes }),
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to resolve dispute');
+    }
+    return await response.json();
+  },
+};
 export const faqApi = {
   // Get all FAQs
   getAllFaqs: async () => {
