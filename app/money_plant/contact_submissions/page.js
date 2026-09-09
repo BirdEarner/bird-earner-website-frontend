@@ -56,12 +56,13 @@ export default function ContactSubmissionsPage() {
             const response = await contactApi.markAsRead(token, id);
 
             if (response.success) {
+                const newStatus = response.data?.status || 'resolved';
                 setContacts(contacts.map(contact =>
-                    contact.id === id ? { ...contact, status: 'READ' } : contact
+                    contact.id === id ? { ...contact, status: newStatus, isRead: true } : contact
                 ));
                 toast({
                     title: "Success",
-                    description: "Marked as read",
+                    description: "Marked as read & resolved",
                 });
             }
         } catch (error) {
@@ -149,62 +150,65 @@ export default function ContactSubmissionsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredContacts.map((contact) => (
-                                <tr key={contact.id} className={`border-b border-purple-100 last:border-0 ${contact.status === 'PENDING' ? 'bg-purple-50/30' : ''}`}>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ${contact.status === 'PENDING' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                                {contact.name.charAt(0).toUpperCase()}
+                            {filteredContacts.map((contact) => {
+                                const isPending = (contact.status || '').toLowerCase() === 'pending';
+                                return (
+                                    <tr key={contact.id} className={`border-b border-purple-100 last:border-0 ${isPending ? 'bg-purple-50/30' : ''}`}>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ${isPending ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                                    {contact.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className="text-sm font-medium text-black">{contact.name}</span>
                                             </div>
-                                            <span className="text-sm font-medium text-black">{contact.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="space-y-0.5">
-                                            <p className="text-sm text-black">{contact.email}</p>
-                                            {contact.phone && <p className="text-xs text-gray-500">{contact.phone}</p>}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-sm text-black">{contact.subject}</td>
-                                    <td className="px-4 py-3 text-sm text-black">
-                                        {new Date(contact.createdAt).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm">
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${contact.status === 'PENDING'
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : "bg-green-100 text-green-700"
-                                                }`}
-                                        >
-                                            {contact.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-purple-600"
-                                                onClick={() => {
-                                                    setSelectedContact(contact);
-                                                    setIsDetailOpen(true);
-                                                    if (contact.status === 'PENDING') handleMarkAsRead(contact.id);
-                                                }}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="space-y-0.5">
+                                                <p className="text-sm text-black">{contact.email}</p>
+                                                {contact.phone && <p className="text-xs text-gray-500">{contact.phone}</p>}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-black">{contact.subject}</td>
+                                        <td className="px-4 py-3 text-sm text-black">
+                                            {new Date(contact.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${isPending
+                                                        ? "bg-yellow-100 text-yellow-700"
+                                                        : "bg-green-100 text-green-700"
+                                                    }`}
                                             >
-                                                View
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-600"
-                                                onClick={() => handleDelete(contact.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                {contact.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-purple-600"
+                                                    onClick={() => {
+                                                        setSelectedContact(contact);
+                                                        setIsDetailOpen(true);
+                                                        if (isPending) handleMarkAsRead(contact.id);
+                                                    }}
+                                                >
+                                                    View
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-600"
+                                                    onClick={() => handleDelete(contact.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                             {filteredContacts.length === 0 && (
                                 <tr>
                                     <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
@@ -269,7 +273,7 @@ export default function ContactSubmissionsPage() {
                     )}
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Close</Button>
-                        {selectedContact?.status === 'PENDING' && (
+                        {(selectedContact?.status || '').toLowerCase() === 'pending' && (
                             <Button
                                 className="bg-purple-600 hover:bg-purple-700"
                                 onClick={() => {
@@ -277,7 +281,7 @@ export default function ContactSubmissionsPage() {
                                     setIsDetailOpen(false);
                                 }}
                             >
-                                Mark Read
+                                Mark Read & Resolve
                             </Button>
                         )}
                     </div>
