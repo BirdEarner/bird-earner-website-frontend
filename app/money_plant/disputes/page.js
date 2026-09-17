@@ -436,10 +436,12 @@ export default function AdminDisputesPage() {
                   <div>
                     <p className="text-sm font-bold text-rose-950 flex items-center gap-1.5">
                       <XCircle className="h-4 w-4 text-rose-600" />
-                      In Favor of Client (Cancel Booking)
+                      In Favor of Client
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Resolves dispute with 0% penalty for client. Client does not need to pay cash to freelancer.
+                      {selectedDispute?.paymentMethod === "CASH"
+                        ? "Client does not need to make any cash payment to the freelancer for this job."
+                        : "Full refund of the reserved job amount to the client's available wallet balance."}
                     </p>
                   </div>
                 </label>
@@ -463,10 +465,12 @@ export default function AdminDisputesPage() {
                   <div>
                     <p className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      In Favor of Freelancer (Cash Payment)
+                      In Favor of Freelancer
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Resolves dispute in favor of freelancer. Client must pay ₹{selectedDispute?.budgetAmount} in cash directly to freelancer.
+                      {selectedDispute?.paymentMethod === "CASH"
+                        ? "Freelancer is authorized to collect the applicable cash payment directly from the client, with applicable Bird fee handled according to the existing fee rules."
+                        : "Held job funds are released to the freelancer's withdrawable wallet and added to total earnings, with applicable Bird fee deducted according to the existing fee rules."}
                     </p>
                   </div>
                 </label>
@@ -490,10 +494,10 @@ export default function AdminDisputesPage() {
                   <div>
                     <p className="text-sm font-bold text-purple-950 flex items-center gap-1.5">
                       <Info className="h-4 w-4 text-purple-600" />
-                      Close Dispute (Mutual Settlement)
+                      Neutral / Closed by Admin
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Closes the dispute status without requiring further cash payment.
+                      Close the dispute without refunding the client or paying the freelancer. No automated wallet transaction will occur, and the existing job workflow and timer will resume.
                     </p>
                   </div>
                 </label>
