@@ -65,15 +65,23 @@ export default function HomePromosPage() {
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [offers, setOffers] = useState([]);
-  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [promoMode, setPromoMode] = useState("prefill"); // "prefill" | "scratch"
   const [editingOffer, setEditingOffer] = useState(null);
   const [offerForm, setOfferForm] = useState(emptyOfferForm());
   const [offerSaving, setOfferSaving] = useState(false);
 
   const filtered = useMemo(() => {
-    if (filter === "ALL") return promos;
-    return promos.filter((p) => p.placement === filter);
-  }, [promos, filter]);
+    const promoCards = promos.map((p) => ({ ...p, cardType: "promo" }));
+    const scratchCards = offers.map((o) => ({
+      ...o,
+      cardType: "scratch",
+      placement: o.placement === "BANNER" ? "BANNER" : "OFFER_CARD",
+    }));
+    const merged = [...promoCards, ...scratchCards];
+    return filter === "ALL"
+      ? merged
+      : merged.filter((c) => c.placement === filter);
+  }, [promos, offers, filter]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -107,6 +115,9 @@ export default function HomePromosPage() {
     setForm(emptyForm());
     setImageFile(null);
     setPreviewUrl("");
+    setPromoMode("prefill");
+    setEditingOffer(null);
+    setOfferForm(emptyOfferForm());
     setDialogOpen(true);
   };
 
@@ -139,6 +150,7 @@ export default function HomePromosPage() {
     });
     setImageFile(null);
     setPreviewUrl(promo.imageUrl ? loadImageURI(promo.imageUrl) : "");
+    setPromoMode("prefill");
     setDialogOpen(true);
   };
 
@@ -170,6 +182,10 @@ export default function HomePromosPage() {
   };
 
   const handleSave = async () => {
+    if (promoMode === "scratch") {
+      await handleOfferSave();
+      return;
+    }
     if (!form.title.trim()) {
       toast({
         title: "Validation",
@@ -228,12 +244,6 @@ export default function HomePromosPage() {
     }
   };
 
-  const openCreateOffer = () => {
-    setEditingOffer(null);
-    setOfferForm(emptyOfferForm());
-    setOfferDialogOpen(true);
-  };
-
   const openEditOffer = (offer) => {
     setEditingOffer(offer);
     setOfferForm({
@@ -245,7 +255,12 @@ export default function HomePromosPage() {
       maxDiscount: offer.maxDiscount ?? "",
       isActive: offer.isActive !== false,
     });
-    setOfferDialogOpen(true);
+    setForm((p) => ({
+      ...p,
+      placement: offer.placement === "BANNER" ? "BANNER" : "OFFER_CARD",
+    }));
+    setPromoMode("scratch");
+    setDialogOpen(true);
   };
 
   const handleOfferSave = async () => {
@@ -286,6 +301,7 @@ export default function HomePromosPage() {
         maxDiscount: offerForm.maxDiscount
           ? parseFloat(offerForm.maxDiscount)
           : null,
+        placement: form.placement === "BANNER" ? "BANNER" : "OFFER_CARD",
         isActive: offerForm.isActive,
       };
       if (editingOffer) {
@@ -295,7 +311,7 @@ export default function HomePromosPage() {
         await adminOfferApi.create(token, payload);
         toast({ title: "Created", description: "Scratch card offer created." });
       }
-      setOfferDialogOpen(false);
+      setDialogOpen(false);
       fetchData();
     } catch (error) {
       toast({
@@ -385,11 +401,65 @@ export default function HomePromosPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-purple-200 p-10 text-center text-muted-foreground">
-          No promos yet. Add a banner or offer card to show on Client Home.
+          No cards yet. Add a banner, offer card or scratch card offer to show on Client Home.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((promo) => (
+          {filtered.map((promo) =>
+            promo.cardType === "scratch" ? (
+              <div
+                key={promo.id}
+                className="rounded-xl border border-purple-100 bg-white overflow-hidden shadow-sm"
+              >
+                <div className="aspect-video bg-purple-700 relative flex items-center justify-center">
+                  <div className="text-center px-4">
+                    <span className="inline-block rounded-md bg-white/15 border border-white/30 text-white text-lg font-bold px-4 py-2 tracking-widest">
+                      {promo.code}
+                    </span>
+                    <p className="text-white text-sm font-semibold mt-2">
+                      {offerDiscountLabel(promo)}
+                    </p>
+                  </div>
+                  <span className="absolute top-2 left-2 text-[10px] font-bold uppercase bg-black/60 text-white px-2 py-1 rounded">
+                    {promo.placement === "BANNER" ? "Banner" : "Offer card"}
+                  </span>
+                  {!promo.isActive && (
+                    <span className="absolute top-2 right-2 text-[10px] font-bold uppercase bg-red-600 text-white px-2 py-1 rounded">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+                <div className="p-4 space-y-2">
+                  <h3 className="font-semibold text-purple-950">
+                    {promo.serviceName || "Scratch card offer"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Scratch to reveal · one per client · single-use
+                    {promo.minBooking > 0 ? ` · Min booking ₹${promo.minBooking}` : ""}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" variant="outline" onClick={() => openEditOffer(promo)}>
+                      <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOfferToggle(promo)}
+                    >
+                      {promo.isActive ? "Disable" : "Enable"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200"
+                      onClick={() => handleOfferDelete(promo.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div
               key={promo.id}
               className="rounded-xl border border-purple-100 bg-white overflow-hidden shadow-sm"
@@ -444,14 +514,23 @@ export default function HomePromosPage() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          )}
         </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit home promo" : "Add home promo"}</DialogTitle>
+            <DialogTitle>
+              {promoMode === "scratch"
+                ? editingOffer
+                  ? "Edit scratch offer"
+                  : "Add scratch offer"
+                : editing
+                ? "Edit home promo"
+                : "Add home promo"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4 py-2">
@@ -580,6 +659,36 @@ export default function HomePromosPage() {
             </label>
 
             <div className="rounded-lg border border-purple-100 bg-purple-50/50 p-4 space-y-3">
+              <h4 className="font-semibold text-purple-900 text-sm">Choose an option</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPromoMode("prefill")}
+                  className={`rounded-lg border px-3 py-3 text-left text-sm font-semibold transition ${
+                    promoMode === "prefill"
+                      ? "border-purple-600 bg-purple-100 text-purple-900 shadow-sm"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-purple-300"
+                  }`}
+                >
+                  Job Requirements prefill (on tap)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPromoMode("scratch")}
+                  className={`rounded-lg border px-3 py-3 text-left text-sm font-semibold transition flex items-center gap-2 ${
+                    promoMode === "scratch"
+                      ? "border-purple-600 bg-purple-100 text-purple-900 shadow-sm"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-purple-300"
+                  }`}
+                >
+                  <Ticket className="w-4 h-4 shrink-0" />
+                  Scratch Card Offers
+                </button>
+              </div>
+            </div>
+
+            {promoMode === "prefill" ? (
+            <div className="rounded-lg border border-purple-100 bg-purple-50/50 p-4 space-y-3">
               <h4 className="font-semibold text-purple-900 text-sm">
                 Job Requirements prefill (on tap)
               </h4>
@@ -657,6 +766,115 @@ export default function HomePromosPage() {
                 />
               </div>
             </div>
+            ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+              <h4 className="font-semibold text-purple-900 text-sm flex items-center gap-2">
+                <Ticket className="w-4 h-4" /> Scratch Card Offers
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Service-specific coupons shown as scratch cards on Client Home.
+                Reveal by scratching to add the coupon; one per client, single-use.
+                Existing scratch cards are managed from the cards in the grid on this page.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Coupon code *</Label>
+                  <Input
+                    placeholder="e.g. CLEAN20"
+                    value={offerForm.code}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, code: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Service *</Label>
+                  <select
+                    className="w-full h-10 rounded-md border px-3 text-sm bg-white"
+                    value={offerForm.serviceId}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, serviceId: e.target.value }))
+                    }
+                  >
+                    <option value="">Select service…</option>
+                    {services.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Discount type *</Label>
+                  <select
+                    className="w-full h-10 rounded-md border px-3 text-sm bg-white"
+                    value={offerForm.amountType}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, amountType: e.target.value }))
+                    }
+                  >
+                    <option value="LUMPSUM">Flat ₹ off</option>
+                    <option value="PERCENT">% off</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>
+                    {offerForm.amountType === "PERCENT" ? "Percent *" : "Amount ₹ *"}
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder={offerForm.amountType === "PERCENT" ? "20" : "50"}
+                    value={offerForm.amount}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, amount: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Min booking ₹</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={offerForm.minBooking}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, minBooking: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+
+              {offerForm.amountType === "PERCENT" && (
+                <div>
+                  <Label>Max discount ₹ (optional)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Cap for % discounts"
+                    value={offerForm.maxDiscount}
+                    onChange={(e) =>
+                      setOfferForm((p) => ({ ...p, maxDiscount: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={offerForm.isActive}
+                  onChange={(e) =>
+                    setOfferForm((p) => ({ ...p, isActive: e.target.checked }))
+                  }
+                />
+                Active (show as a scratch card on Client Home)
+              </label>
+            </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -665,209 +883,19 @@ export default function HomePromosPage() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || offerSaving}
               className="bg-purple-700 hover:bg-purple-800"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {editing ? "Save changes" : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Scratch Card Offers (client Home · Offers & Discounts) */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-purple-900 flex items-center gap-2">
-              <Ticket className="w-5 h-5" /> Scratch Card Offers
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Service-specific coupons shown as scratch cards on Client Home.
-              Reveal them on the card to add the coupon; one per client, single-use.
-            </p>
-          </div>
-          <Button
-            onClick={openCreateOffer}
-            className="bg-purple-700 hover:bg-purple-800"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add scratch offer
-          </Button>
-        </div>
-
-        {offers.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-purple-200 p-8 text-center text-muted-foreground">
-            No scratch offers yet. Create a coupon clients can scratch to reveal.
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {offers.map((offer) => (
-              <div
-                key={offer.id}
-                className="rounded-xl border border-purple-100 bg-white p-4 shadow-sm space-y-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="inline-block rounded-md bg-purple-700 text-white text-sm font-bold px-3 py-1 tracking-wider">
-                    {offer.code}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${
-                      offer.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {offer.isActive ? "Active" : "Inactive"}
-                  </span>
-                </div>
-                <p className="text-base font-semibold text-purple-950">
-                  {offerDiscountLabel(offer)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {offer.serviceName || "Unknown service"} · Min booking ₹
-                  {offer.minBooking}
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => openEditOffer(offer)}>
-                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleOfferToggle(offer)}>
-                    {offer.isActive ? "Disable" : "Enable"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 border-red-200"
-                    onClick={() => handleOfferDelete(offer.id)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingOffer ? "Edit scratch offer" : "Add scratch offer"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Coupon code *</Label>
-                <Input
-                  placeholder="e.g. CLEAN20"
-                  value={offerForm.code}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, code: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Service *</Label>
-                <select
-                  className="w-full h-10 rounded-md border px-3 text-sm bg-white"
-                  value={offerForm.serviceId}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, serviceId: e.target.value }))
-                  }
-                >
-                  <option value="">Select service…</option>
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.category})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Discount type *</Label>
-                <select
-                  className="w-full h-10 rounded-md border px-3 text-sm bg-white"
-                  value={offerForm.amountType}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, amountType: e.target.value }))
-                  }
-                >
-                  <option value="LUMPSUM">Flat ₹ off</option>
-                  <option value="PERCENT">% off</option>
-                </select>
-              </div>
-              <div>
-                <Label>
-                  {offerForm.amountType === "PERCENT" ? "Percent *" : "Amount ₹ *"}
-                </Label>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder={offerForm.amountType === "PERCENT" ? "20" : "50"}
-                  value={offerForm.amount}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, amount: e.target.value }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Min booking ₹</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={offerForm.minBooking}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, minBooking: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-
-            {offerForm.amountType === "PERCENT" && (
-              <div>
-                <Label>Max discount ₹ (optional)</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="Cap for % discounts"
-                  value={offerForm.maxDiscount}
-                  onChange={(e) =>
-                    setOfferForm((p) => ({ ...p, maxDiscount: e.target.value }))
-                  }
-                />
-              </div>
-            )}
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={offerForm.isActive}
-                onChange={(e) =>
-                  setOfferForm((p) => ({ ...p, isActive: e.target.checked }))
-                }
-              />
-              Active (show as a scratch card on Client Home)
-            </label>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOfferDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleOfferSave}
-              disabled={offerSaving}
-              className="bg-purple-700 hover:bg-purple-800"
-            >
-              {offerSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {editingOffer ? "Save changes" : "Create"}
+              {saving || offerSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              {promoMode === "scratch"
+                ? editingOffer
+                  ? "Save changes"
+                  : "Create"
+                : editing
+                ? "Save changes"
+                : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
