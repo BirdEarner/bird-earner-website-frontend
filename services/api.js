@@ -768,6 +768,67 @@ export const adminHomePromoApi = {
   },
 };
 
+export const adminOfferApi = {
+  list: async (token) => {
+    const response = await fetch(`${baseUrl}/api/admin/offers`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to fetch offers");
+    }
+    return response.json();
+  },
+
+  create: async (token, payload) => {
+    const response = await fetch(`${baseUrl}/api/admin/offers`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to create offer");
+    }
+    return response.json();
+  },
+
+  update: async (token, id, payload) => {
+    const response = await fetch(`${baseUrl}/api/admin/offers/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to update offer");
+    }
+    return response.json();
+  },
+
+  remove: async (token, id) => {
+    const response = await fetch(`${baseUrl}/api/admin/offers/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to delete offer");
+    }
+    return response.json();
+  },
+};
+
 export const adminSuggestedServiceApi = {
   getSuggestedServices: async ({ token, page = 1, limit = 10, status = "all", search = "" } = {}) => {
     try {
