@@ -6,6 +6,23 @@ import { API_BASE_URL } from "@/services/api";
 
 const AuthContext = createContext();
 
+// Stable id per browser so a browser that passed the two-factor code isn't challenged again
+const getWebDeviceInfo = () => {
+  if (typeof window === 'undefined') return {};
+
+  let deviceId = localStorage.getItem('deviceId');
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem('deviceId', deviceId);
+  }
+
+  return {
+    deviceId,
+    deviceName: `Web browser (${navigator.platform || 'unknown OS'})`,
+    platform: 'web',
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,16 +107,42 @@ export const AuthProvider = ({ children }) => {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, ...getWebDeviceInfo() }),
         credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
 
+      // Two-factor account on an unrecognised browser: no session yet, the sign-in page asks for the code
+      if (data.requiresTwoFactor) {
+        return data;
+      }
+
       await fetchUser();
       return data;
     } catch (err) {
       console.error(err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  // Completes sign-in after the two-factor code has been entered
+  const verifyTwoFactorLogin = async (challengeId, code) => {
+    try {
+      setError(null);
+      const res = await fetch(`${API_BASE_URL}/api/auth/login/verify-2fa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeId, code }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Verification failed');
+
+      await fetchUser();
+      return data;
+    } catch (err) {
       setError(err.message);
       throw err;
     }
@@ -159,6 +202,7 @@ export const AuthProvider = ({ children }) => {
         setRole,
         switchRole,
         login,
+        verifyTwoFactorLogin,
         logout,
         register,
         fetchUser,

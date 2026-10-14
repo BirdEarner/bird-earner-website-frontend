@@ -16,7 +16,9 @@ function SignInContent() {
     email: "",
     password: "",
   });
-  const { login, user, error, setError } = useAuth();
+  const [twoFactor, setTwoFactor] = useState(null); // { challengeId, maskedMobile } while waiting for a code
+  const [code, setCode] = useState("");
+  const { login, verifyTwoFactorLogin, user, error, setError } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -55,6 +57,21 @@ function SignInContent() {
 
     try {
       const sessionData = await login(formData.email, formData.password);
+
+      // New browser on a two-factor account: ask for the code before signing in
+      if (sessionData?.requiresTwoFactor) {
+        setTwoFactor({
+          challengeId: sessionData.data.challengeId,
+          maskedMobile: sessionData.data.maskedMobile,
+        });
+        setCode("");
+        toast({
+          title: "Verification code sent",
+          description: `Enter the code sent to ${sessionData.data.maskedMobile}.`,
+        });
+        return;
+      }
+
       if (sessionData) {
         toast({
           title: "Success",
@@ -69,6 +86,27 @@ function SignInContent() {
         variant: "destructive",
         title: "Error",
         description: error.message || "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await verifyTwoFactorLogin(twoFactor.challengeId, code);
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting...",
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Verification failed. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -103,6 +141,67 @@ function SignInContent() {
               <div className="h-10 bg-purple-100/50 rounded-md" />
               <div className="h-10 bg-purple-100/50 rounded-md" />
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (twoFactor) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-purple-50/50 p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="flex flex-col items-center text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-black">
+              Verify it&apos;s you
+            </h1>
+            <p className="text-sm text-black/70 mt-2">
+              Enter the 6-digit code sent to{" "}
+              <span className="font-semibold">{twoFactor.maskedMobile}</span>.
+              It&apos;s needed once for each new browser.
+            </p>
+          </div>
+
+          <div className="bg-white p-8 rounded-xl shadow-sm border border-purple-200">
+            <form onSubmit={handleVerifyCode} className="space-y-6">
+              <Input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                placeholder="••••••"
+                className="text-center text-2xl tracking-[0.5em] border-purple-200 focus-visible:ring-purple-500"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                disabled={isLoading}
+              />
+
+              <Button
+                type="submit"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2"
+                disabled={isLoading || code.length !== 6}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </Button>
+
+              <button
+                type="button"
+                className="w-full text-sm font-medium text-purple-600 hover:text-purple-700"
+                onClick={() => {
+                  setTwoFactor(null);
+                  setCode("");
+                }}
+                disabled={isLoading}
+              >
+                Back to sign in
+              </button>
+            </form>
           </div>
         </div>
       </div>
