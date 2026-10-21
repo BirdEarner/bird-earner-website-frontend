@@ -1304,17 +1304,13 @@ function HomeContent() {
             </p>
             <div className="flex gap-6 text-sm">
               <Link
-                href="https://www.termsfeed.com/live/b92f614b-fad8-4a63-a6e6-3d87f8afc321"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/privacy"
                 className="text-purple-200/70 hover:text-white transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link
-                href="https://www.termsfeed.com/live/b92f614b-fad8-4a63-a6e6-3d87f8afc321"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/terms"
                 className="text-purple-200/70 hover:text-white transition-colors"
               >
                 Terms of Service
