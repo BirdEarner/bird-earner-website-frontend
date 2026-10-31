@@ -379,6 +379,26 @@ export const contactApi = {
     }
   },
 
+  // Internal admin notes on support / feedback / report tickets
+  saveAdminNotes: async (token, id, notes) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/admin/contacts/${id}/notes`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ notes }),
+      });
+      if (!response.ok) throw new Error("Failed to save admin notes");
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
   // Delete contact submission (admin only)
   deleteContact: async (token, id) => {
     try {

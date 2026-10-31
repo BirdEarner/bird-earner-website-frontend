@@ -31,8 +31,11 @@ import {
   Filter,
   ChevronDown,
   X,
+  StickyNote,
+  Save,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { contactApi } from "@/services/api";
@@ -264,6 +267,8 @@ function ContactSubmissionsContent() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
   const [reportContext, setReportContext] = useState(null);
+  const [adminNotes, setAdminNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const updateQuery = useCallback(
     (updates, { resetPage = false } = {}) => {
@@ -429,6 +434,41 @@ function ContactSubmissionsContent() {
     }
   };
 
+  const handleSaveAdminNotes = async () => {
+    if (!selectedContact?.id || savingNotes) return;
+    try {
+      setSavingNotes(true);
+      const token = getToken();
+      const response = await contactApi.saveAdminNotes(
+        token,
+        selectedContact.id,
+        adminNotes
+      );
+      if (response.success) {
+        const saved =
+          response.data?.adminResponse ?? (adminNotes.trim() || null);
+        patchLocalContact(selectedContact.id, {
+          adminResponse: saved,
+          adminId: response.data?.adminId,
+          updatedAt: response.data?.updatedAt,
+        });
+        setAdminNotes(saved || "");
+        toast({
+          title: "Notes saved",
+          description: "Admin notes updated for this ticket.",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save admin notes",
+      });
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this submission?")) return;
     try {
@@ -441,6 +481,7 @@ function ContactSubmissionsContent() {
           setIsDetailOpen(false);
           setSelectedContact(null);
           setReportContext(null);
+          setAdminNotes("");
         }
         toast({
           title: "Deleted",
@@ -458,6 +499,7 @@ function ContactSubmissionsContent() {
 
   const openDetails = async (contact) => {
     setSelectedContact(contact);
+    setAdminNotes(contact.adminResponse || "");
     setReportContext(null);
     setIsDetailOpen(true);
 
@@ -474,6 +516,9 @@ function ContactSubmissionsContent() {
       const response = await contactApi.getContactContext(token, contact.id);
       if (response.success) {
         if (response.data?.contact) {
+          if (response.data.contact.adminResponse != null) {
+            setAdminNotes(response.data.contact.adminResponse || "");
+          }
           setSelectedContact((prev) => ({
             ...prev,
             ...response.data.contact,
@@ -872,6 +917,12 @@ function ContactSubmissionsContent() {
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <TypeBadge type={type} />
                     <StatusBadge status={status} />
+                    {contact.adminResponse ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-800 px-2 py-0.5 text-[10px] font-semibold">
+                        <StickyNote className="h-3 w-3" />
+                        Notes
+                      </span>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1021,7 +1072,15 @@ function ContactSubmissionsContent() {
                         : "—"}
                     </td>
                     <td className="px-3 py-3 align-middle">
-                      <StatusBadge status={status} />
+                      <div className="flex flex-col items-start gap-1">
+                        <StatusBadge status={status} />
+                        {contact.adminResponse ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700">
+                            <StickyNote className="h-3 w-3" />
+                            Notes
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-3 py-3 align-middle text-right">
                       <div className="flex items-center justify-end gap-0.5">
@@ -1129,6 +1188,8 @@ function ContactSubmissionsContent() {
           if (!open) {
             setSelectedContact(null);
             setReportContext(null);
+            setAdminNotes("");
+            setSavingNotes(false);
           }
         }}
       >
@@ -1197,7 +1258,11 @@ function ContactSubmissionsContent() {
                 <DetailField
                   icon={<Phone className="h-3.5 w-3.5" />}
                   label="Reporter phone"
-                  value={selectedContact.phone || "Not provided"}
+                  value={
+                    selectedContact.phone ||
+                    report?.reporter?.mobile ||
+                    "Not provided"
+                  }
                 />
               </div>
 
@@ -1372,10 +1437,12 @@ function ContactSubmissionsContent() {
                         </div>
 
                         {!report?.messages?.length ? (
-                          <p className="text-sm text-gray-500 py-6 text-center">
-                            {meta?.threadId || meta?.jobId
-                              ? "No messages found for this thread."
-                              : "No linked chat thread on this report."}
+                          <p className="text-sm text-gray-500 py-6 text-center px-2">
+                            {!meta?.threadId && !report?.thread
+                              ? meta?.jobId
+                                ? "No chat thread is linked to this job report yet — job details above are still available."
+                                : "No linked chat thread on this report."
+                              : "This chat thread has no messages yet. That is normal if the report was filed before any conversation."}
                           </p>
                         ) : (
                           <div className="max-h-[360px] overflow-y-auto space-y-2 rounded-lg border border-purple-100 bg-purple-50/30 p-3">
@@ -1425,6 +1492,52 @@ function ContactSubmissionsContent() {
                   )}
                 </div>
               )}
+
+              <div className="space-y-2.5 border-t border-purple-100 pt-4">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <StickyNote className="h-4 w-4 text-purple-700" />
+                    <h3 className="text-sm font-semibold text-black">
+                      Admin notes
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Internal only · not visible to users
+                  </p>
+                </div>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add investigation notes, follow-ups, or resolution details…"
+                  className="min-h-[110px] resize-y border-purple-200 focus-visible:ring-purple-500 text-sm"
+                  maxLength={10000}
+                />
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-[11px] text-gray-400 tabular-nums">
+                    {adminNotes.length.toLocaleString()}/10,000
+                    {(selectedContact.adminResponse || "") !== adminNotes ? (
+                      <span className="ml-2 text-amber-600">Unsaved changes</span>
+                    ) : null}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto border-purple-200 text-purple-800"
+                    disabled={
+                      savingNotes ||
+                      (selectedContact.adminResponse || "") === adminNotes
+                    }
+                    onClick={handleSaveAdminNotes}
+                  >
+                    {savingNotes ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-1.5" />
+                    )}
+                    Save notes
+                  </Button>
+                </div>
+              </div>
 
               <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-2 border-t border-purple-100">
                 <Button
@@ -1551,7 +1664,9 @@ function PartyCard({ title, user, fallbackName, fallbackEmail, tone = "default" 
       <p className="text-xs text-gray-600 break-all">
         {user?.email || fallbackEmail || "—"}
       </p>
-      <p className="text-xs text-gray-500">{user?.mobile || "No phone"}</p>
+      <p className="text-xs text-gray-500">
+        {user?.mobile?.trim() || "No phone"}
+      </p>
       {user?.id ? (
         <p className="text-[11px] font-mono text-gray-400 break-all">{user.id}</p>
       ) : null}
