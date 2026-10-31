@@ -326,7 +326,7 @@ export const contactApi = {
     }
   },
 
-  // Mark contact as read (admin only)
+  // Mark contact as viewed only — does not resolve (admin only)
   markAsRead: async (token, id) => {
     try {
       const response = await fetch(`${baseUrl}/api/admin/contacts/${id}/read`, {
@@ -336,7 +336,42 @@ export const contactApi = {
         },
         credentials: 'include'
       });
-      if (!response.ok) throw new Error("Failed to mark contact as read");
+      if (!response.ok) throw new Error("Failed to mark contact as viewed");
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  // Explicitly resolve a contact / support ticket (admin only)
+  markAsResolved: async (token, id) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/admin/contacts/${id}/resolve`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error("Failed to resolve contact");
+      return await response.json();
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
+  },
+
+  // In-depth chat/job context for report tickets (admin only)
+  getContactContext: async (token, id) => {
+    try {
+      const response = await fetch(`${baseUrl}/api/admin/contacts/${id}/context`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to load report context");
       return await response.json();
     } catch (error) {
       console.error("API Error:", error);
