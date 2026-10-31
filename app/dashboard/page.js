@@ -73,24 +73,24 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
       const total = completedJobs + cancelledJobs;
       setStats({
         successScore: total > 0 ? Math.round((completedJobs / total) * 100) : 0,
-        rating: data.rating || 0,
+        rating: Number(data.rating) || 0,
         responseTime: '< 1hr',
-        level: data.level || 1,
+        level: Number(data.level) || 1,
         flags: [],
-        xp: data.xp || 0
+        xp: Number(data.xp) || 0
       });
 
       setEarnings({
-        total: data.totalEarnings || 0,
-        monthly: data.monthlyEarnings || 0,
-        outstanding: data.outstandingAmount || 0,
-        forWithdrawal: data.withdrawableAmount || 0
+        total: Number(data.totalEarnings) || 0,
+        monthly: Number(data.monthlyEarnings) || 0,
+        outstanding: Number(data.outstandingAmount) || 0,
+        forWithdrawal: Number(data.withdrawableAmount) || 0
       });
 
       setOrders({
-        completed: data.completedJobs || 0,
-        active: data.activeJobs || 0,
-        cancelled: data.cancelledJobs || 0
+        completed: Number(data.completedJobs) || 0,
+        active: Number(data.activeJobs) || 0,
+        cancelled: Number(data.cancelledJobs) || 0
       });
 
       if (data.chartData) {
@@ -106,9 +106,9 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
         {/* Profile Card */}
         <div className="col-span-1 rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col items-center text-center">
-            {freelancerProfile?.profile_photo ? (
+            {(freelancerProfile?.profilePhoto || freelancerProfile?.profile_photo || user?.profilePhoto) ? (
               <Image
-                src={freelancerProfile.profile_photo}
+                src={freelancerProfile?.profilePhoto || freelancerProfile?.profile_photo || user?.profilePhoto}
                 alt="Profile"
                 width={100}
                 height={100}
@@ -117,21 +117,21 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
             ) : (
               <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                 <span className="text-3xl font-bold text-purple-600">
-                  {freelancerProfile?.full_name?.charAt(0) || user?.name?.charAt(0) || '?'}
+                  {(freelancerProfile?.fullName || freelancerProfile?.full_name || user?.fullName || user?.name || '?').charAt(0)}
                 </span>
               </div>
             )}
-            <h2 className="text-xl font-bold">{freelancerProfile?.full_name || user?.name}</h2>
-            <p className="text-muted-foreground text-sm">{freelancerProfile?.profile_heading || 'Freelancer'}</p>
+            <h2 className="text-xl font-bold">{freelancerProfile?.fullName || freelancerProfile?.full_name || user?.fullName || user?.name}</h2>
+            <p className="text-muted-foreground text-sm">{freelancerProfile?.profileHeading || freelancerProfile?.profile_heading || 'Freelancer'}</p>
             <div className="mt-4 space-y-2 w-full text-left">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm truncate">{freelancerProfile?.email || user?.email}</span>
               </div>
-              {freelancerProfile?.mobile_number && (
+              {(freelancerProfile?.mobile_number || user?.mobile) && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm">{freelancerProfile.mobile_number}</span>
+                  <span className="text-sm">{freelancerProfile?.mobile_number || user?.mobile}</span>
                 </div>
               )}
               {(freelancerProfile?.city || freelancerProfile?.state) && (
@@ -140,10 +140,10 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
                   <span className="text-sm">{[freelancerProfile.city, freelancerProfile.state].filter(Boolean).join(', ')}</span>
                 </div>
               )}
-              {freelancerProfile?.highest_qualification && (
+              {(freelancerProfile?.highestQualification || freelancerProfile?.highest_qualification) && (
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm">{freelancerProfile.highest_qualification}</span>
+                  <span className="text-sm">{freelancerProfile.highestQualification || freelancerProfile.highest_qualification}</span>
                 </div>
               )}
               {freelancerProfile?.experience != null && (
@@ -173,7 +173,7 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Rating</p>
-                  <h3 className="text-2xl font-bold">{stats.rating.toFixed(1)} / 5</h3>
+                  <h3 className="text-2xl font-bold">{Number(stats.rating || 0).toFixed(1)} / 5</h3>
                 </div>
                 <Star className="h-8 w-8 text-yellow-500" />
               </div>
@@ -185,23 +185,29 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
           <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <h3 className="font-semibold mb-2">Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {freelancerProfile?.role_designation?.length > 0 ? (
+              {Array.isArray(freelancerProfile?.skills) && freelancerProfile.skills.length > 0 ? (
+                freelancerProfile.skills.map((skill, index) => (
+                  <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                    {typeof skill === 'string' ? skill : skill?.name || skill?.label || 'Skill'}
+                  </span>
+                ))
+              ) : Array.isArray(freelancerProfile?.role_designation) && freelancerProfile.role_designation.length > 0 ? (
                 freelancerProfile.role_designation.map((skill, index) => (
                   <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                    {skill}
+                    {typeof skill === 'string' ? skill : skill?.name || skill?.label || 'Skill'}
                   </span>
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">No skills listed yet.</p>
               )}
             </div>
-            {freelancerProfile?.certifications?.length > 0 && (
+            {Array.isArray(freelancerProfile?.certifications) && freelancerProfile.certifications.length > 0 && (
               <>
                 <h3 className="font-semibold mt-4 mb-2">Certifications</h3>
                 <div className="flex flex-wrap gap-2">
                   {freelancerProfile.certifications.map((cert, index) => (
                     <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      {cert}
+                      {typeof cert === 'string' ? cert : cert?.name || cert?.label || 'Certification'}
                     </span>
                   ))}
                 </div>
@@ -266,7 +272,7 @@ function FreelancerDashboard({ user, role, userData, dashboardData }) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                    label={({ name, percent }) => Number(percent) > 0 ? `${name} ${((Number(percent) || 0) * 100).toFixed(0)}%` : ''}
                   >
                     {[orders.active, orders.completed, orders.cancelled].map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -312,18 +318,18 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
     if (dashboardData) {
       const data = dashboardData;
       setStats({
-        totalJobs: data.postedJobs || 0,
-        activeJobs: data.activeJobs || 0,
-        completedJobs: data.completedJobs || 0,
-        cancelledJobs: data.cancelledJobs || 0,
-        totalSpent: data.totalSpent || 0,
-        monthlySpent: data.monthlySpent || 0,
-        level: data.level || 1,
-        xp: data.xp || 0,
-        rating: data.rating || 0,
-        wallet: data.walletBalance || 0,
-        availableBalance: data.availableBalance || 0,
-        reservedAmount: data.reservedAmount || 0,
+        totalJobs: Number(data.postedJobs) || 0,
+        activeJobs: Number(data.activeJobs) || 0,
+        completedJobs: Number(data.completedJobs) || 0,
+        cancelledJobs: Number(data.cancelledJobs) || 0,
+        totalSpent: Number(data.totalSpent) || 0,
+        monthlySpent: Number(data.monthlySpent) || 0,
+        level: Number(data.level) || 1,
+        xp: Number(data.xp) || 0,
+        rating: Number(data.rating) || 0,
+        wallet: Number(data.walletBalance) || 0,
+        availableBalance: Number(data.availableBalance) || 0,
+        reservedAmount: Number(data.reservedAmount) || 0,
       });
 
       if (data.chartData) {
@@ -339,9 +345,9 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
         {/* Profile Card */}
         <div className="col-span-1 rounded-xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col items-center text-center">
-            {clientProfile?.profile_photo ? (
+            {(clientProfile?.profilePhoto || clientProfile?.profile_photo || user?.profilePhoto) ? (
               <Image
-                src={clientProfile.profile_photo}
+                src={clientProfile?.profilePhoto || clientProfile?.profile_photo || user?.profilePhoto}
                 alt="Profile"
                 width={100}
                 height={100}
@@ -350,21 +356,21 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
             ) : (
               <div className="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                 <span className="text-3xl font-bold text-purple-600">
-                  {clientProfile?.full_name?.charAt(0) || user?.name?.charAt(0) || '?'}
+                  {(clientProfile?.fullName || clientProfile?.full_name || user?.fullName || user?.name || '?').charAt(0)}
                 </span>
               </div>
             )}
-            <h2 className="text-xl font-bold">{clientProfile?.full_name || user?.name}</h2>
-            <p className="text-muted-foreground text-sm">{clientProfile?.company_name || 'Client'}</p>
+            <h2 className="text-xl font-bold">{clientProfile?.fullName || clientProfile?.full_name || user?.fullName || user?.name}</h2>
+            <p className="text-muted-foreground text-sm">{clientProfile?.companyName || clientProfile?.company_name || 'Client'}</p>
             <div className="mt-4 space-y-2 w-full text-left">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm truncate">{clientProfile?.email || user?.email}</span>
               </div>
-              {clientProfile?.mobile_number && (
+              {(clientProfile?.mobile_number || user?.mobile) && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm">{clientProfile.mobile_number}</span>
+                  <span className="text-sm">{clientProfile?.mobile_number || user?.mobile}</span>
                 </div>
               )}
               {(clientProfile?.city || clientProfile?.state || clientProfile?.country) && (
@@ -373,18 +379,18 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
                   <span className="text-sm">{[clientProfile.city, clientProfile.state, clientProfile.country].filter(Boolean).join(', ')}</span>
                 </div>
               )}
-              {clientProfile?.website_link?.length > 0 && (
+              {Array.isArray(clientProfile?.websiteLink || clientProfile?.website_link) && (clientProfile?.websiteLink || clientProfile?.website_link).length > 0 && (
                 <div className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <a href={clientProfile.website_link[0]} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline truncate">
-                    {clientProfile.website_link[0]}
+                  <a href={(clientProfile.websiteLink || clientProfile.website_link)[0]} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline truncate">
+                    {(clientProfile.websiteLink || clientProfile.website_link)[0]}
                   </a>
                 </div>
               )}
-              {clientProfile?.organization_type && (
+              {(clientProfile?.organizationType || clientProfile?.organization_type) && (
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm">{clientProfile.organization_type}</span>
+                  <span className="text-sm">{clientProfile.organizationType || clientProfile.organization_type}</span>
                 </div>
               )}
             </div>
@@ -408,7 +414,7 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Rating</p>
-                  <h3 className="text-2xl font-bold">{stats.rating.toFixed ? stats.rating.toFixed(1) : stats.rating} / 5</h3>
+                  <h3 className="text-2xl font-bold">{Number(stats.rating || 0).toFixed(1)} / 5</h3>
                 </div>
                 <Star className="h-8 w-8 text-yellow-500" />
               </div>
@@ -492,7 +498,7 @@ function ClientDashboard({ user, role, userData, dashboardData }) {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${((Number(percent) || 0) * 100).toFixed(0)}%`}
                   >
                     {[stats.activeJobs, stats.completedJobs, stats.cancelledJobs].map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -524,18 +530,16 @@ export default function DashboardPage() {
       setStatsLoading(true);
       setStatsError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+        const roleParam = role?.active ? `?role=${encodeURIComponent(role.active)}` : '';
+        const res = await fetch(`${API_BASE_URL}/api/dashboard/stats${roleParam}`, {
           credentials: 'include'
         });
-        if (res.ok) {
-          const result = await res.json();
-          if (result.success) {
-            setDashboardData(result.data);
-          } else {
-            setStatsError(result.message || 'Failed to load stats.');
-          }
+        const result = await res.json().catch(() => null);
+        if (res.ok && result?.success) {
+          setDashboardData(result.data || {});
         } else {
-          setStatsError(`Error ${res.status}: Failed to load dashboard stats.`);
+          setDashboardData({});
+          setStatsError(result?.message || `Error ${res.status}: Failed to load dashboard stats.`);
         }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -545,7 +549,7 @@ export default function DashboardPage() {
       }
     };
     fetchDashboardData();
-  }, [user, role.active]); // Re-fetch when the active role switches
+  }, [user, role?.active]); // Re-fetch when the active role switches
 
   if (loading) {
     return (
