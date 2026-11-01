@@ -5,8 +5,21 @@ import { Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.birdearner";
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/birdearner/id6741027618";
 
 function SignInContent() {
   const router = useRouter();
@@ -18,6 +31,7 @@ function SignInContent() {
   });
   const [twoFactor, setTwoFactor] = useState(null); // { challengeId, maskedMobile } while waiting for a code
   const [code, setCode] = useState("");
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const { login, verifyTwoFactorLogin, user, error, setError } = useAuth();
   const { toast } = useToast();
 
@@ -330,12 +344,69 @@ function SignInContent() {
 
         <p className="text-center text-sm text-black/70">
           Don&apos;t have an account?{" "}
-          <a
-            href="#"
-            className="font-medium text-purple-600 hover:text-purple-700"
-          >
-            Sign up
-          </a>
+          <Dialog open={downloadOpen} onOpenChange={setDownloadOpen}>
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="font-medium text-purple-600 hover:text-purple-700 underline-offset-2 hover:underline"
+              >
+                Download the app
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md border-purple-100 bg-white">
+              <DialogHeader>
+                <DialogTitle className="text-purple-900">
+                  Download BirdEarner
+                </DialogTitle>
+                <DialogDescription className="text-purple-700/70">
+                  Create your account in the mobile app — available on Google Play
+                  and the App Store.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-3 pt-2">
+                <a
+                  href={PLAY_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-gray-900 to-black px-5 py-3.5 text-white hover:opacity-90 transition-opacity"
+                >
+                  <Image
+                    src="/image.png"
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="invert shrink-0"
+                  />
+                  <div className="text-left leading-tight">
+                    <div className="text-[10px] uppercase tracking-wide opacity-80">
+                      Get it on
+                    </div>
+                    <div className="text-base font-semibold">Google Play</div>
+                  </div>
+                </a>
+                <a
+                  href={APP_STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-gray-900 to-black px-5 py-3.5 text-white hover:opacity-90 transition-opacity"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-7 h-7 shrink-0 fill-white"
+                    aria-hidden
+                  >
+                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.1 22C7.79 22.05 6.8 20.68 5.96 19.47C4.25 16.45 2.93 10.85 4.7 7.13C5.57 5.28 7.5 4.15 9.4 4.12C10.69 4.09 11.9 4.98 12.71 4.98C13.5 4.98 14.96 3.92 16.54 4.1C17.21 4.13 18.99 4.37 20.16 6.05C20.06 6.11 17.73 7.5 17.76 10.24C17.8 13.5 20.6 14.56 20.64 14.58C20.61 14.66 20.17 16.16 19.15 17.69L18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" />
+                  </svg>
+                  <div className="text-left leading-tight">
+                    <div className="text-[10px] uppercase tracking-wide opacity-80">
+                      Download on the
+                    </div>
+                    <div className="text-base font-semibold">App Store</div>
+                  </div>
+                </a>
+              </div>
+            </DialogContent>
+          </Dialog>
         </p>
       </div>
     </div>

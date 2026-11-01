@@ -29,12 +29,10 @@ import { contactApi } from "@/services/api";
 import birdyAnimation from "@/public/animations/birdy.json";
 import clientAnimation from "@/public/animations/client.json";
 import manAnimation from "@/public/animations/man.json";
-import owlAnimation from "@/public/animations/owl.json";
 import meditateAnimation from "@/public/animations/meditate.json";
 import { useState, useEffect, Suspense } from "react";
 import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
 import Android from "@/components/ui/android";
-import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { motion } from "framer-motion";
 import { useCursorPosition } from "@/hooks/useCursorPosition";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
@@ -61,11 +59,9 @@ function HomeContent() {
     smoothY,
     smoothAppY,
     smoothFeaturesY,
-    smoothTestimonialsY,
     heroOpacity,
     appOpacity,
     featuresOpacity,
-    testimonialsOpacity,
   } = useScrollAnimation();
 
   useSmoothScroll();
@@ -413,11 +409,11 @@ function HomeContent() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/sign-in">
+            <a href="#download">
               <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-md hover:shadow-lg transition-all duration-300">
                 Get Started
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </motion.nav>
@@ -451,12 +447,12 @@ function HomeContent() {
               skills seamlessly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/sign-in">
+              <a href="#download">
                 <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-8 py-6 text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+              </a>
             </div>
             {/* Animated Tooltip */}
             <div className="flex items-center justify-center lg:justify-start gap-2 pt-8">
@@ -512,9 +508,6 @@ function HomeContent() {
             }}
             className="flex-1 relative"
           >
-            <div className="absolute -top-20 -right-20 w-64 h-64 opacity-30">
-              <Lottie animationData={owlAnimation} />
-            </div>
             <div className="relative z-10">
               <Lottie
                 animationData={manAnimation}
@@ -527,12 +520,13 @@ function HomeContent() {
 
       {/* App Download Section */}
       <motion.section
+        id="download"
         style={{ y: smoothAppY, opacity: appOpacity }}
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
         variants={staggerContainer}
-        className="py-32 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-white via-purple-50 to-white relative overflow-hidden"
+        className="py-32 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-white via-purple-50 to-white relative overflow-hidden scroll-mt-24"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(139,92,246,0.1),transparent)] pointer-events-none"></div>
         <div className="container mx-auto flex flex-col lg:flex-row items-center gap-16">
@@ -758,73 +752,12 @@ function HomeContent() {
         </motion.div>
       </motion.section>
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section — hidden for now
       <motion.section
         style={{ y: smoothTestimonialsY, opacity: testimonialsOpacity }}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true, margin: "-20%" }}
-        variants={staggerContainer}
-        className="min-h-screen py-32 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-purple-50 to-white relative overflow-hidden flex items-center"
-      >
-        <motion.div variants={fadeIn} className="container mx-auto">
-          <motion.div
-            variants={fadeIn}
-            className="text-center max-w-3xl mx-auto mb-4"
-          >
-            <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-6">
-              What Our Users Say
-            </h2>
-            <p className="text-xl text-purple-700/70">
-              Hear from professionals who have transformed their work experience
-              with BirdEarner
-            </p>
-          </motion.div>
-
-          <motion.div variants={fadeIn} className="mt-20">
-            <AnimatedTestimonials
-              autoplay={true}
-              testimonials={[
-                {
-                  name: "Sarah Johnson",
-                  designation: "Freelance Graphic Designer",
-                  quote:
-                    "BirdEarner has completely changed the way I find clients. The job management tools keep everything organized, and the secure payments give me peace of mind.",
-                  src: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
-                },
-                {
-                  name: "Michael Chen",
-                  designation: "Software Developer",
-                  quote:
-                    "I love how easy it is to connect with clients worldwide. The in-app chat and milestone system ensure smooth project execution every time.",
-                  src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
-                },
-                {
-                  name: "Emily Rodriguez",
-                  designation: "Content Writer",
-                  quote:
-                    "The multilingual job descriptions are a game changer! I can now work with clients from different countries without language barriers.",
-                  src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
-                },
-                {
-                  name: "David Wilson",
-                  designation: "Digital Marketer",
-                  quote:
-                    "BirdEarner's reward system is a great motivator! Earning bonuses while working on projects keeps me engaged and excited.",
-                  src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
-                },
-                {
-                  name: "Lisa Chang",
-                  designation: "E-commerce Specialist",
-                  quote:
-                    "As someone who manages multiple clients, I appreciate the secure wallet payments. Getting paid on time without any hassle is a huge relief!",
-                  src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3",
-                },
-              ]}
-            />
-          </motion.div>
-        </motion.div>
+        ...
       </motion.section>
+      */}
 
       {/* Contact Section */}
       <motion.section
