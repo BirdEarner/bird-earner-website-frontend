@@ -5,16 +5,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Settings,
-  Bird,
-  Users,
-  Upload,
-  Clock,
-  HardDrive,
-  FolderOpen,
   MessageSquare,
   LogOut,
   HelpCircle,
-  RefreshCw,
   Briefcase,
   UserCheck,
   LayoutDashboard,
@@ -49,9 +42,21 @@ export function AppSidebar() {
     setIsLoaded(true);
   }, []);
 
-  const isActive = (path) => pathname === path;
+  const displayName =
+    user?.fullName ||
+    user?.name ||
+    user?.email?.split("@")[0] ||
+    "User";
+  const photoUrl = user?.profilePhoto || user?.profile_photo || null;
+  const userInitial =
+    displayName?.charAt(0)?.toUpperCase() ||
+    user?.email?.charAt(0)?.toUpperCase() ||
+    "?";
 
-  const isDualRole = role?.freelancer && role?.client;
+  const isActive = (path) =>
+    path === "/dashboard"
+      ? pathname === "/dashboard"
+      : pathname === path || pathname?.startsWith(`${path}/`);
 
   const handleRoleSwitch = (targetRole) => {
     if (targetRole === role.active) return;
@@ -192,10 +197,13 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                tooltip="Profile"
-                isActive={isActive("/dashboard/profile")}
+                tooltip="Profile & Settings"
+                isActive={
+                  isActive("/dashboard/settings") ||
+                  isActive("/dashboard/profile")
+                }
               >
-                <Link href="/dashboard/profile">
+                <Link href="/dashboard/settings">
                   <Settings className="text-muted-foreground" />
                   <span>Profile</span>
                 </Link>
@@ -214,15 +222,32 @@ export function AppSidebar() {
       {/* User info at the bottom */}
       {user && (
         <SidebarFooter className="border-t border-purple-200 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-sm font-semibold text-white">
-              {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || '?'}
-            </div>
+          <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-3 rounded-lg p-1 -m-1 hover:bg-purple-100/70 transition-colors"
+          >
+            {photoUrl ? (
+              <Image
+                src={photoUrl}
+                alt={displayName}
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-purple-200"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-sm font-semibold text-white">
+                {userInitial}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-purple-900">{user.name || 'User'}</p>
-              <p className="truncate text-xs text-purple-500 capitalize">{role.active}</p>
+              <p className="truncate text-sm font-medium text-purple-900">
+                {displayName}
+              </p>
+              <p className="truncate text-xs text-purple-500 capitalize">
+                {role.active}
+              </p>
             </div>
-          </div>
+          </Link>
         </SidebarFooter>
       )}
     </Sidebar>

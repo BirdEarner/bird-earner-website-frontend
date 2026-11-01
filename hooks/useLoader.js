@@ -9,7 +9,7 @@ export const useLoader = () => {
   const searchParams = useSearchParams();
 
   // Define routes that should show the loader
-  const loaderRoutes = ['/', '/sign-in', '/dashboard', '/dashboard/users', '/dashboard/upload_files'];
+  const loaderRoutes = ['/', '/sign-in', '/dashboard', '/dashboard/chat', '/dashboard/settings', '/dashboard/profile'];
 
   useEffect(() => {
     // Only show loader for specific routes
