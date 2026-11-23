@@ -2,15 +2,46 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import { API_BASE_URL } from "@/services/api";
 import { useRouter } from "next/navigation";
+import birdyAnimation from "@/public/animations/birdy.json";
+import { useCursorPosition } from "@/hooks/useCursorPosition";
+
+// Dynamically import Lottie with SSR disabled
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Floating bird animation (from the original homepage): the bird eases
+  // toward the cursor and flips to face its direction of travel.
+  const cursorPosition = useCursorPosition();
+  const [birdPosition, setBirdPosition] = useState({ x: 0, y: 0 });
+  const [isMovingRight, setIsMovingRight] = useState(false);
+
+  useEffect(() => {
+    const animateBird = () => {
+      const dx = (cursorPosition.x - birdPosition.x) * 0.1;
+      const dy = (cursorPosition.y - birdPosition.y) * 0.1;
+
+      if (dx !== 0) {
+        setIsMovingRight(dx > 0);
+      }
+
+      setBirdPosition((prev) => ({
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+    };
+
+    const animationFrame = requestAnimationFrame(animateBird);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [cursorPosition.x, cursorPosition.y, birdPosition.x, birdPosition.y]);
 
   useEffect(() => {
     // Fetch user data from API
@@ -52,8 +83,24 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Floating bird animation — pointer-events-none so it never blocks clicks */}
+      <div
+        className="fixed pointer-events-none z-40"
+        style={{
+          transform: `translate(${birdPosition.x}px, ${birdPosition.y}px)`,
+          transition: "transform 0.3s ease-out",
+          width: "80px",
+          height: "80px",
+        }}
+        aria-hidden="true"
+      >
+        <div style={{ transform: `scaleX(${isMovingRight ? -1 : 1})` }}>
+          <Lottie animationData={birdyAnimation} />
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-purple-100">
+      <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-purple-100">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Image
