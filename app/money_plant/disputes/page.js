@@ -344,7 +344,7 @@ export default function AdminDisputesPage() {
                   </span>
                 </div>
                 <p className="mt-1.5 text-sm font-bold text-amber-950">
-                  "{dispute.disputeReason || dispute.cancellationReason || "Dispute raised by user"}"
+                  &quot;{dispute.disputeReason || dispute.cancellationReason || "Dispute raised by user"}&quot;
                 </p>
                 {dispute.disputeRaisedAt && (
                   <p className="mt-1 text-[11px] text-amber-700">

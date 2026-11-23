@@ -92,3 +92,157 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================================
+   BirdEarner — subtle bird-inspired visual details
+   Flight paths, feathers, wings and gentle hover polish.
+   Decorative only: no layout, content or colour changes.
+   ============================================================ */
+
+/* --- Gentle entrance animations --- */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s ease-out backwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out backwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-pulse-slow {
+    animation: none;
+  }
+}
+
+/* --- Service cards: feather watermark + soft lift on hover --- */
+.feather-bg {
+  position: relative;
+  overflow: hidden;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cg stroke='%238B5CF6' stroke-opacity='0.4' stroke-width='2' fill='none' stroke-linecap='round'%3E%3Cpath d='M16 84C24 54 46 26 80 14'/%3E%3Cpath d='M80 14C76 44 52 70 16 84'/%3E%3Cpath d='M16 84C34 66 56 42 80 14'/%3E%3Cpath d='M30 72L44 52'/%3E%3Cpath d='M40 62L54 42'/%3E%3Cpath d='M50 52L64 32'/%3E%3Cpath d='M60 42L72 26'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right -12px bottom -12px;
+  background-size: 110px 110px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.feather-bg:hover,
+.feather-bg-hover:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 14px 28px -16px rgba(109, 40, 217, 0.4),
+    inset 0 0 0 1px rgba(139, 92, 246, 0.35);
+}
+
+/* --- Sections: soft dotted flight paths behind content --- */
+.feather-pattern {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='300' viewBox='0 0 720 300'%3E%3Cg fill='none' stroke='%238B5CF6' stroke-linecap='round' stroke-width='1.5'%3E%3Cpath d='M0 220C160 140 320 280 480 200C600 140 660 170 720 150' stroke-opacity='0.35' stroke-dasharray='1 10'/%3E%3Cpath d='M0 90C180 30 340 150 520 80C620 45 670 60 720 50' stroke-opacity='0.28' stroke-dasharray='1 10'/%3E%3Cpath d='M240 185q9-11 18 0q9-11 18 0' stroke-opacity='0.55' stroke-width='2'/%3E%3Cpath d='M560 105q7-9 14 0q7-9 14 0' stroke-opacity='0.45' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(to bottom, #faf5ff, #ffffff);
+  background-repeat: repeat, no-repeat;
+  background-size:
+    720px 300px,
+    auto;
+}
+
+/* --- CTA section: soft glow at the edges --- */
+.cta-feather {
+  box-shadow: inset 0 0 140px rgba(139, 92, 246, 0.16);
+}
+
+/* --- CTA heading: tiny bird gliding above the title --- */
+.cta-bird {
+  position: relative;
+}
+
+.cta-bird::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -2.6rem;
+  width: 52px;
+  height: 26px;
+  transform: translateX(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 32'%3E%3Cpath d='M4 22C12 10 20 10 28 22C36 10 44 10 52 22' fill='none' stroke='%238B5CF6' stroke-opacity='0.9' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* --- Testimonials: small feather above each quote --- */
+.quotes {
+  position: relative;
+}
+
+.quotes::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -1.15rem;
+  width: 20px;
+  height: 20px;
+  transform: translateX(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%238B5CF6' stroke-opacity='0.65' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 34C12 22 20 12 34 6C32 20 24 30 8 34Z'/%3E%3Cpath d='M8 34C16 26 26 16 34 6'/%3E%3C/g%3E%3C/svg%3E")
+    center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* --- Footer links: tiny lift on hover --- */
+.bird-icon-hover {
+  display: inline-block;
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease;
+}
+
+.bird-icon-hover:hover {
+  transform: translateY(-2px);
+}
+
+/* --- Hero button: soft lift on hover --- */
+.btn-bird {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.btn-bird:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -12px rgba(109, 40, 217, 0.5);
+}
+
+

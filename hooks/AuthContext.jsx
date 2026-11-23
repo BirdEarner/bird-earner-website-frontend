@@ -83,9 +83,19 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Auth fetch error:', err);
+      // Treat network/auth errors as unauthenticated - allow page to render
       setUser(null);
+      setRole({
+        freelancer: false,
+        client: false,
+        active: 'client',
+        freelancerData: null,
+        clientData: null,
+      });
+      setUserData(null);
     } finally {
+      // Always reset loading state so homepage can render
       setLoading(false);
     }
   };
