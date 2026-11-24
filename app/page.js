@@ -101,7 +101,7 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-purple-100">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Image
               src="/bird.png"
@@ -114,18 +114,24 @@ export default function Home() {
               BirdEarner
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="#contact" className="text-purple-600 hover:text-purple-700">Contact</a>
-            <a href="#services" className="text-purple-600 hover:text-purple-700">Services</a>
-            <Link href="/sign-in" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded hover:shadow-lg">
-              Sign In
-            </Link>
-          </div>
+          <nav className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-sm">
+            <a href="#home" className="text-purple-700 font-medium hover:text-purple-900">Home</a>
+            <a href="#categories" className="text-purple-700 font-medium hover:text-purple-900">Categories</a>
+            <a href="#how-it-works" className="text-purple-700 font-medium hover:text-purple-900">How it works</a>
+            <a href="#for-clients" className="text-purple-700 font-medium hover:text-purple-900">For clients</a>
+            <a href="#for-freelancers" className="text-purple-700 font-medium hover:text-purple-900">For freelancers</a>
+            <Link href="/faqs" className="text-purple-700 font-medium hover:text-purple-900">FAQ</Link>
+            <a href="#contact" className="text-purple-700 font-medium hover:text-purple-900">Contact</a>
+            <Link href="/sign-in" className="text-purple-700 font-medium hover:text-purple-900">Log in</Link>
+            <a href="#download" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium px-4 py-2 rounded hover:shadow-lg transition-shadow">
+              Download app
+            </a>
+          </nav>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center py-12 relative overflow-hidden">
+      <section id="home" className="min-h-screen bg-gradient-to-b from-purple-50 to-white flex items-center py-12 relative overflow-hidden">
         {/* Soft purple gradient glows */}
         <span aria-hidden="true" className="pointer-events-none absolute -left-20 top-10 h-64 w-64 rounded-full bg-purple-300/30 blur-3xl" />
         <span aria-hidden="true" className="pointer-events-none absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-violet-300/25 blur-3xl" />
@@ -235,7 +241,7 @@ export default function Home() {
       </section>
 
       {/* Services Section */}
-      <section className="py-12 bg-white">
+      <section id="categories" className="py-12 bg-white">
         <div className="container mx-auto px-6">
           <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-8">
             Services
@@ -258,7 +264,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-12 bg-gray-50">
+      <section id="how-it-works" className="py-12 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-8">
             How It Works
@@ -312,7 +318,7 @@ export default function Home() {
       <section className="py-12 bg-white">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
+            <div id="for-clients">
               <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-6">
                 For Clients
               </h2>
@@ -328,7 +334,7 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-            <div>
+            <div id="for-freelancers">
               <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-6">
                 For Freelancers
               </h2>
@@ -349,7 +355,7 @@ export default function Home() {
       </section>
 
       {/* CTA Banner */}
-      <section className="py-24 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-purple-50 to-white cta-feather feather-pattern relative overflow-hidden">
+      <section id="download" className="py-24 px-6 sm:px-8 lg:px-16 bg-gradient-to-b from-purple-50 to-white cta-feather feather-pattern relative overflow-hidden">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-700 to-purple-900 bg-clip-text text-transparent mb-4 cta-bird">
             Ready to Get Started?
@@ -402,7 +408,7 @@ export default function Home() {
     </div>
   </section>
 /* Footer */}
-      <footer className="bg-gradient-to-b from-purple-900 to-purple-950 text-white">
+      <footer id="contact" className="bg-gradient-to-b from-purple-900 to-purple-950 text-white">
         <div className="container mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div>
